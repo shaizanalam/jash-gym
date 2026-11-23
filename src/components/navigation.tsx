@@ -19,6 +19,7 @@ import {
   ChevronRight,
 } from "lucide-react"
 import { cn } from "@/lib/utils"
+import { NutriMentorLogo } from "@/components/ui/logo"
 
 const NAV_ITEMS = [
   { href: "/", label: "Dashboard", icon: LayoutDashboard },
@@ -66,14 +67,9 @@ export function Navigation() {
         )}
       >
         <div className="flex h-15 items-center justify-between px-5 border-b border-[#253745]/40">
-          <Link href="/" onClick={() => setOpen(false)} className="flex items-center gap-2.5">
-            <div className="h-7 w-7 rounded-lg bg-[#182C3D] border border-[#253745] flex items-center justify-center font-bold text-xs text-[#CCD0CF]">
-              NM
-            </div>
-            <span className="font-semibold text-sm tracking-tight text-[#CCD0CF]">
-              NutriMentor
-            </span>
-          </Link>
+          <div onClick={() => setOpen(false)}>
+            <NutriMentorLogo size="sm" href="/" />
+          </div>
           <button
             onClick={() => setOpen(false)}
             className="p-1.5 text-[#9BA8AB] hover:text-[#CCD0CF] rounded-lg hover:bg-[#11212D] transition-colors"
@@ -141,11 +137,7 @@ export function Navigation() {
           >
             <Menu className="h-5 w-5" />
           </button>
-          <Link href="/" className="flex items-center gap-2">
-            <span className="font-semibold text-sm tracking-tight text-[#CCD0CF]">
-              NutriMentor
-            </span>
-          </Link>
+          <NutriMentorLogo size="sm" href="/" />
         </div>
 
         <Link
@@ -214,19 +206,15 @@ export function DesktopNav() {
     >
       {/* Brand Header */}
       <div className="flex h-15 items-center justify-between px-4 border-b border-[#253745]/40">
-        <Link href="/" className="flex items-center gap-2.5 min-w-0">
-          <div className="h-7 w-7 rounded-lg bg-[#182C3D] border border-[#253745] flex items-center justify-center font-bold text-xs text-[#CCD0CF] shrink-0">
-            NM
-          </div>
-          {!collapsed && (
-            <span className="font-semibold text-sm tracking-tight text-[#CCD0CF] truncate">
-              NutriMentor
-            </span>
-          )}
-        </Link>
+        <NutriMentorLogo
+          size="sm"
+          iconOnly={collapsed}
+          href="/"
+          className="min-w-0"
+        />
         <button
           onClick={() => setCollapsed(!collapsed)}
-          className="p-1 rounded-md text-[#9BA8AB] hover:text-[#CCD0CF] hover:bg-[#11212D] transition-colors"
+          className="p-1 rounded-md text-[#9BA8AB] hover:text-[#CCD0CF] hover:bg-[#11212D] transition-colors shrink-0 ml-1"
           title={collapsed ? "Expand sidebar" : "Collapse sidebar"}
         >
           {collapsed ? <ChevronRight className="h-4 w-4" /> : <ChevronLeft className="h-4 w-4" />}

@@ -6,6 +6,7 @@ import { signIn } from "next-auth/react"
 import Link from "next/link"
 import { Eye, EyeOff } from "lucide-react"
 import { animate } from "animejs"
+import { NutriMentorLogo } from "@/components/ui/logo"
 
 export default function SignupPage() {
   const [firstName, setFirstName] = useState("")
@@ -77,14 +78,16 @@ export default function SignupPage() {
         ref={cardRef}
         className="w-full max-w-[380px] overflow-hidden rounded-[32px] bg-[#0c1822] shadow-[0_25px_60px_-15px_rgba(0,0,0,0.8)] border border-[#253745]/70 flex flex-col will-change-transform relative"
       >
-        {/* Specular Metallic Top Header matching reference */}
-        <div className="relative pt-12 pb-8 px-8 bg-gradient-to-b from-[#4A5C6A]/50 via-[#253745]/30 to-transparent overflow-hidden text-center rounded-t-[32px]">
+        {/* Specular Metallic Top Header */}
+        <div className="relative pt-10 pb-7 px-8 bg-gradient-to-b from-[#4A5C6A]/50 via-[#253745]/30 to-transparent overflow-hidden text-center rounded-t-[32px] flex flex-col items-center">
           {/* Top Edge Specular Highlight */}
           <div className="absolute inset-x-0 top-0 h-[1px] bg-gradient-to-r from-transparent via-[#CCD0CF]/40 to-transparent pointer-events-none" />
           <div className="absolute -top-12 left-1/2 -translate-x-1/2 w-48 h-32 rounded-full bg-[#9BA8AB]/20 blur-2xl pointer-events-none" />
 
-          <h1 className="relative z-10 text-2xl sm:text-[28px] font-extrabold text-[#CCD0CF] tracking-tight leading-snug">
-            Create an<br />account
+          <NutriMentorLogo size="md" href="/" className="relative z-10 mb-4" />
+
+          <h1 className="relative z-10 text-2xl font-extrabold text-[#CCD0CF] tracking-tight leading-snug">
+            Create an account
           </h1>
         </div>
 

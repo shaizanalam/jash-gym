@@ -435,3 +435,5 @@ export function BottomSheet({
     </div>
   )
 }
+
+export { NutriMentorLogo, NutriMentorIcon } from "./logo"
