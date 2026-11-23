@@ -21,7 +21,7 @@ export function Button({
 }: {
   children?: React.ReactNode
   className?: string
-  variant?: "default" | "secondary" | "outline" | "ghost" | "destructive" | "accent" | "subtle"
+  variant?: "default" | "secondary" | "outline" | "ghost" | "destructive" | "accent" | "subtle" | "glass"
   size?: "default" | "sm" | "lg" | "icon"
   disabled?: boolean
   asChild?: boolean
@@ -31,6 +31,8 @@ export function Button({
       "bg-[#11212D] text-[#CCD0CF] hover:bg-[#182C3D] hover:text-white border border-[#253745]/70 active:scale-[0.98] shadow-xs",
     accent:
       "bg-[#253745] text-[#CCD0CF] hover:bg-[#344b5e] hover:text-white active:scale-[0.98] shadow-xs border border-[#4A5C6A]/50",
+    glass:
+      "btn-liquid-glass hover:border-[#4A5C6A]/50 hover:shadow-[#253745]/20 text-[#CCD0CF] active:scale-[0.98]",
     secondary:
       "bg-[#162837]/60 text-[#9BA8AB] hover:text-[#CCD0CF] hover:bg-[#1c3346] border border-[#253745]/40 active:scale-[0.98]",
     outline:
@@ -76,20 +78,24 @@ export function Button({
   )
 }
 
-// Sophisticated Dark Card component
+// Liquid Glass Card component with refractive depth and specular highlights
 export function Card({
   className,
   children,
   hoverable,
+  glass,
   ...props
 }: {
   hoverable?: boolean
+  glass?: boolean
 } & React.HTMLAttributes<HTMLDivElement>) {
   return (
     <div
       className={cn(
-        "rounded-2xl bg-[#0f1b24] text-[#CCD0CF] border border-[#253745]/50 shadow-xs transition-colors duration-150",
-        hoverable && "hover:border-[#4A5C6A]/60 transition-all duration-150",
+        glass
+          ? "liquid-glass rounded-2xl border border-[#253745]/60 shadow-[0_4px_24px_rgba(0,0,0,0.35)]"
+          : "rounded-2xl bg-[#0f1b24]/90 backdrop-blur-xl text-[#CCD0CF] border border-[#253745]/50 shadow-xs",
+        hoverable && "liquid-glass-hover transition-all duration-200 hover:border-[#4A5C6A]/70 cursor-pointer",
         className
       )}
       {...props}

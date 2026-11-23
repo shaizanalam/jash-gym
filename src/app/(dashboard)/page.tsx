@@ -145,10 +145,10 @@ export default async function Home() {
         </div>
       </div>
 
-      {/* 3. Daily nutrition overview & 4. Macro breakdown (Compact, refined height) */}
+      {/* 3. Daily nutrition overview & 4. Macro breakdown (Liquid Glass Cards) */}
       <div className="grid grid-cols-1 md:grid-cols-12 gap-3 sm:gap-4">
         {/* Calories Primary Card */}
-        <Card className="md:col-span-4 p-4 flex flex-col justify-between">
+        <Card glass hoverable className="md:col-span-4 p-4 flex flex-col justify-between">
           <div className="flex items-center justify-between pb-2">
             <span className="text-xs font-medium text-[#9BA8AB]">Daily Calories</span>
             <Badge variant="amber" className="text-[10px]">
@@ -183,7 +183,7 @@ export default async function Home() {
         {/* 4 Compact Macro Breakdown Cards */}
         <div className="md:col-span-8 grid grid-cols-2 sm:grid-cols-4 gap-2.5 sm:gap-3">
           {/* Protein (Green) */}
-          <Card className="p-3.5 flex flex-col justify-between">
+          <Card glass hoverable className="p-3.5 flex flex-col justify-between">
             <div className="flex items-center justify-between">
               <span className="text-xs font-medium text-[#9BA8AB]">Protein</span>
               <span className="h-2 w-2 rounded-full bg-emerald-500" />
@@ -205,7 +205,7 @@ export default async function Home() {
           </Card>
 
           {/* Carbs (Cyan) */}
-          <Card className="p-3.5 flex flex-col justify-between">
+          <Card glass hoverable className="p-3.5 flex flex-col justify-between">
             <div className="flex items-center justify-between">
               <span className="text-xs font-medium text-[#9BA8AB]">Carbs</span>
               <span className="h-2 w-2 rounded-full bg-cyan-500" />
@@ -227,7 +227,7 @@ export default async function Home() {
           </Card>
 
           {/* Fat (Amber) */}
-          <Card className="p-3.5 flex flex-col justify-between">
+          <Card glass hoverable className="p-3.5 flex flex-col justify-between">
             <div className="flex items-center justify-between">
               <span className="text-xs font-medium text-[#9BA8AB]">Fat</span>
               <span className="h-2 w-2 rounded-full bg-amber-500" />
@@ -249,7 +249,7 @@ export default async function Home() {
           </Card>
 
           {/* Fibre (Violet) */}
-          <Card className="p-3.5 flex flex-col justify-between">
+          <Card glass hoverable className="p-3.5 flex flex-col justify-between">
             <div className="flex items-center justify-between">
               <span className="text-xs font-medium text-[#9BA8AB]">Fibre</span>
               <span className="h-2 w-2 rounded-full bg-violet-500" />

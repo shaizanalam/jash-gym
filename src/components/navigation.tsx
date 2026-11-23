@@ -157,9 +157,9 @@ export function Navigation() {
         </Link>
       </header>
 
-      {/* Mobile Floating Bottom Bar */}
+      {/* Mobile Floating Bottom Bar with Liquid Glass */}
       <div className="lg:hidden fixed bottom-0 left-0 right-0 z-40 px-3 pb-[max(0.6rem,env(safe-area-inset-bottom,0px))] pointer-events-none flex justify-center">
-        <nav className="pointer-events-auto w-full max-w-sm bg-[#0f1b24]/95 backdrop-blur-md rounded-2xl p-1.5 shadow-[0_10px_30px_rgba(0,0,0,0.6)] border border-[#253745]/60 flex items-center justify-around">
+        <nav className="pointer-events-auto w-full max-w-sm liquid-glass rounded-[28px] p-1.5 shadow-[0_12px_40px_rgba(0,0,0,0.6)] border border-[#4A5C6A]/35 flex items-center justify-around">
           {BOTTOM_NAV_ITEMS.map((item) => {
             const Icon = item.icon
             const isActive = pathname === item.href
@@ -169,10 +169,10 @@ export function Navigation() {
                 key={item.href}
                 href={item.href}
                 className={cn(
-                  "relative flex flex-col items-center justify-center py-1.5 px-3 rounded-xl transition-all duration-150 min-h-[44px] min-w-[50px]",
+                  "relative flex flex-col items-center justify-center py-1.5 px-3 rounded-2xl transition-all duration-200 min-h-[44px] min-w-[50px]",
                   isActive
-                    ? "bg-[#182C3D] text-[#CCD0CF] font-semibold border border-[#253745]/60"
-                    : "text-[#9BA8AB] hover:text-[#CCD0CF]"
+                    ? "bg-[#253745]/75 text-[#CCD0CF] font-semibold border border-[#4A5C6A]/40 shadow-[0_2px_8px_rgba(0,0,0,0.3)]"
+                    : "text-[#9BA8AB] hover:text-[#CCD0CF] hover:bg-[#182C3D]/40"
                 )}
               >
                 <Icon
@@ -184,6 +184,9 @@ export function Navigation() {
                 <span className="text-[10px] mt-0.5 tracking-tight font-medium">
                   {item.label}
                 </span>
+                {isActive && (
+                  <span className="absolute -bottom-0.5 w-3.5 h-[2px] rounded-full bg-[#CCD0CF]" />
+                )}
               </Link>
             )
           })}
