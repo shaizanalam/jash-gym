@@ -16,6 +16,12 @@
   --slate-teal: #2f4a63;
   --ocean-blue: #5b91a3;
   --font-sans: -apple-system, BlinkMacSystemFont, "SF Pro Text", "SF Pro Display", var(--font-sans, system-ui), sans-serif;
+
+  /* Apple HIG Safe Area Variables mirrored once at :root */
+  --safe-area-inset-top: env(safe-area-inset-top, 0px);
+  --safe-area-inset-right: env(safe-area-inset-right, 0px);
+  --safe-area-inset-bottom: env(safe-area-inset-bottom, 0px);
+  --safe-area-inset-left: env(safe-area-inset-left, 0px);
 }
 
 @theme inline {
@@ -64,13 +70,19 @@ body {
   touch-action: manipulation;
 }
 
-/* Apple HIG Safe Area Utilities */
+/* Apple HIG Safe Area Utilities (base + inset) */
 .safe-bottom {
-  padding-bottom: max(0.75rem, env(safe-area-inset-bottom, 0.75rem));
+  padding-bottom: max(0.75rem, env(safe-area-inset-bottom, 0px));
 }
 
 .safe-top {
-  padding-top: max(0.75rem, env(safe-area-inset-top, 0.75rem));
+  padding-top: max(0.75rem, env(safe-area-inset-top, 0px));
+}
+
+/* Apple iOS momentum scrolling & bounce preservation */
+.ios-scroll {
+  -webkit-overflow-scrolling: touch;
+  overscroll-behavior-y: contain;
 }
 
 /* Liquid Glass (Apple WWDC Specification + liquid-glass-react / liquid-glass-studio) */

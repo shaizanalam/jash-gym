@@ -6,11 +6,12 @@ import { Providers } from "@/components/providers"
 const inter = Inter({ subsets: ["latin"], variable: "--font-sans" })
 
 export const viewport: Viewport = {
-  themeColor: "#071b2b",
+  themeColor: [
+    { media: "(prefers-color-scheme: light)", color: "#f4f8fa" },
+    { media: "(prefers-color-scheme: dark)", color: "#071b2b" },
+  ],
   width: "device-width",
   initialScale: 1,
-  maximumScale: 1,
-  userScalable: false,
   viewportFit: "cover",
 }
 
