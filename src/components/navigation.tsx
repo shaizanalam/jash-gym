@@ -22,8 +22,8 @@ import { cn } from "@/lib/utils"
 
 const NAV_ITEMS = [
   { href: "/", label: "Dashboard", icon: LayoutDashboard },
-  { href: "/scanner", label: "Scan Food", icon: Camera },
   { href: "/journal", label: "Food Journal", icon: List },
+  { href: "/scanner", label: "Scan Food", icon: Camera },
   { href: "/planner", label: "Meal Planner", icon: UtensilsCrossed },
   { href: "/analytics", label: "Insights", icon: BarChart3 },
   { href: "/profile", label: "Profile", icon: User },

@@ -14,7 +14,31 @@ export async function POST(request: Request) {
       )
     }
 
-    const normalizedEmail = email.toLowerCase().trim()
+    const trimmedName = String(name).trim()
+    const normalizedEmail = String(email).toLowerCase().trim()
+    const trimmedPassword = String(password).trim()
+
+    if (!trimmedName) {
+      return NextResponse.json(
+        { error: "Please enter your name" },
+        { status: 400 }
+      )
+    }
+
+    const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/
+    if (!emailRegex.test(normalizedEmail)) {
+      return NextResponse.json(
+        { error: "Please enter a valid email address" },
+        { status: 400 }
+      )
+    }
+
+    if (trimmedPassword.length < 6) {
+      return NextResponse.json(
+        { error: "Password must be at least 6 characters" },
+        { status: 400 }
+      )
+    }
 
     const existingUser = await prisma.user.findUnique({
       where: { email: normalizedEmail },
@@ -22,27 +46,31 @@ export async function POST(request: Request) {
 
     if (existingUser) {
       return NextResponse.json(
-        { error: "An account with this email already exists" },
+        { error: "An account with this email already exists. Please log in instead." },
         { status: 409 }
       )
     }
 
-    const passwordHash = await bcrypt.hash(password, 12)
+    const passwordHash = await bcrypt.hash(trimmedPassword, 12)
 
-    const user = await prisma.user.create({
-      data: {
-        email: normalizedEmail,
-        name,
-        passwordHash,
-      },
-    })
+    // Create user and initial nutrition profile atomically
+    const user = await prisma.$transaction(async (tx) => {
+      const newUser = await tx.user.create({
+        data: {
+          email: normalizedEmail,
+          name: trimmedName,
+          passwordHash,
+        },
+      })
 
-    // Create a default initial nutrition profile
-    await prisma.nutritionProfile.create({
-      data: {
-        userId: user.id,
-        dietaryPreference: "vegetarian",
-      },
+      await tx.nutritionProfile.create({
+        data: {
+          userId: newUser.id,
+          dietaryPreference: "vegetarian",
+        },
+      })
+
+      return newUser
     })
 
     return NextResponse.json({
@@ -50,10 +78,14 @@ export async function POST(request: Request) {
       email: user.email,
       name: user.name,
     })
-  } catch (error) {
+  } catch (error: any) {
     console.error("Registration error:", error)
+    const message =
+      error?.message && typeof error.message === "string"
+        ? error.message
+        : "Failed to register user. Please try again."
     return NextResponse.json(
-      { error: "Failed to register user" },
+      { error: message },
       { status: 500 }
     )
   }

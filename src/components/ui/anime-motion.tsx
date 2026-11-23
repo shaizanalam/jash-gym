@@ -5,8 +5,23 @@ import { usePathname } from "next/navigation"
 import { animate, stagger } from "animejs"
 
 /**
+ * Route order map matching navigation bar tabs
+ * Index determines slide direction (slide left when going right, slide right when going left)
+ */
+export const ROUTE_ORDER: Record<string, number> = {
+  "/": 0,
+  "/journal": 1,
+  "/scanner": 2,
+  "/results": 2.5,
+  "/planner": 3,
+  "/analytics": 4,
+  "/profile": 5,
+  "/settings": 6,
+}
+
+/**
  * SmoothPageTransition
- * Uses Anime.js to smoothly animate pages when switching routes in the dashboard
+ * Uses Anime.js to smoothly slide and fade pages based on nav bar tab direction
  */
 export function SmoothPageTransition({
   children,
@@ -17,21 +32,52 @@ export function SmoothPageTransition({
 }) {
   const pathname = usePathname()
   const containerRef = React.useRef<HTMLDivElement>(null)
+  const prevPathRef = React.useRef<string | null>(null)
 
   React.useEffect(() => {
     if (!containerRef.current) return
 
-    animate(containerRef.current, {
-      opacity: [0, 1],
-      translateY: [10, 0],
-      scale: [0.995, 1],
-      ease: "outCubic",
-      duration: 360,
-    })
+    const prevPath = prevPathRef.current
+    let initialX = 0
+
+    if (prevPath !== null && prevPath !== pathname) {
+      const prevIdx = ROUTE_ORDER[prevPath] ?? 0
+      const currIdx = ROUTE_ORDER[pathname] ?? 0
+
+      if (currIdx > prevIdx) {
+        // Switching to a tab to the right -> slide in from right to left
+        initialX = 42
+      } else if (currIdx < prevIdx) {
+        // Switching to a tab to the left -> slide in from left to right
+        initialX = -42
+      } else {
+        initialX = 0
+      }
+    }
+
+    prevPathRef.current = pathname
+
+    // Cancel any in-flight animation on the container
+    try {
+      animate(containerRef.current, {
+        opacity: [0, 1],
+        translateX: [initialX, 0],
+        translateY: [initialX === 0 ? 8 : 0, 0],
+        scale: [0.99, 1],
+        ease: "outCubic",
+        duration: 320,
+      })
+    } catch (e) {
+      // Fallback
+    }
   }, [pathname])
 
   return (
-    <div ref={containerRef} className={className} style={{ willChange: "transform, opacity" }}>
+    <div
+      ref={containerRef}
+      className={className}
+      style={{ willChange: "transform, opacity" }}
+    >
       {children}
     </div>
   )
@@ -39,7 +85,7 @@ export function SmoothPageTransition({
 
 /**
  * AnimeEntrance
- * Smoothly animates a card or container on first mount using Anime.js
+ * Smoothly animates cards or items on mount using Anime.js
  */
 export function AnimeEntrance({
   children,
@@ -63,16 +109,16 @@ export function AnimeEntrance({
         translateY: [16, 0],
         scale: [0.98, 1],
         ease: "outQuart",
-        duration: 450,
-        delay: stagger(60, { start: delay }),
+        duration: 400,
+        delay: stagger(50, { start: delay }),
       })
     } else {
       animate(ref.current, {
         opacity: [0, 1],
-        translateY: [24, 0],
-        scale: [0.97, 1],
+        translateY: [20, 0],
+        scale: [0.98, 1],
         ease: "outCubic",
-        duration: 450,
+        duration: 400,
         delay,
       })
     }
