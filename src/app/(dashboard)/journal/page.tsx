@@ -241,10 +241,10 @@ export default function JournalPage() {
           </p>
         </div>
         <div className="flex items-center gap-2">
-          <Button variant="secondary" size="sm" onClick={openAddModal}>
+          <Button variant="secondary" size="sm" onClick={openAddModal} className="rounded-full">
             <Plus className="h-3.5 w-3.5 mr-1" /> Log Meal
           </Button>
-          <Button variant="accent" size="sm" asChild>
+          <Button variant="primary" size="sm" asChild className="rounded-full shadow-md">
             <Link href="/scanner">
               <Camera className="h-3.5 w-3.5 mr-1" /> Scan Plate
             </Link>
@@ -612,14 +612,16 @@ export default function JournalPage() {
                 type="button"
                 variant="outline"
                 size="sm"
+                className="rounded-full"
                 onClick={() => setShowAddModal(false)}
               >
                 Cancel
               </Button>
               <Button
                 type="submit"
-                variant="accent"
+                variant="primary"
                 size="sm"
+                className="rounded-full shadow-md"
                 disabled={submitting || !formFoodName.trim()}
               >
                 {submitting ? "Saving..." : editingEntry ? "Update Entry" : "Save Entry"}

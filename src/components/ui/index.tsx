@@ -21,12 +21,14 @@ export function Button({
 }: {
   children?: React.ReactNode
   className?: string
-  variant?: "default" | "secondary" | "outline" | "ghost" | "destructive" | "accent" | "subtle" | "glass"
+  variant?: "default" | "primary" | "secondary" | "outline" | "ghost" | "destructive" | "accent" | "subtle" | "glass"
   size?: "default" | "sm" | "lg" | "icon"
   disabled?: boolean
   asChild?: boolean
 } & React.ButtonHTMLAttributes<HTMLButtonElement>) {
   const variants = {
+    primary:
+      "bg-[#CCD0CF] text-[#06141B] hover:bg-white hover:text-[#06141B] font-bold shadow-md active:scale-[0.98] border border-white/20 rounded-full",
     default:
       "bg-[#11212D] text-[#CCD0CF] hover:bg-[#182C3D] hover:text-white border border-[#253745]/70 active:scale-[0.98] shadow-xs",
     accent:
@@ -92,15 +94,20 @@ export function Card({
   return (
     <div
       className={cn(
+        "relative overflow-hidden",
         glass
-          ? "liquid-glass rounded-2xl border border-[#253745]/60 shadow-[0_4px_24px_rgba(0,0,0,0.35)]"
+          ? "liquid-glass rounded-2xl border border-[#253745]/70 shadow-[0_8px_30px_rgba(6,20,27,0.5)]"
           : "rounded-2xl bg-[#0f1b24]/90 backdrop-blur-xl text-[#CCD0CF] border border-[#253745]/50 shadow-xs",
         hoverable && "liquid-glass-hover transition-all duration-200 hover:border-[#4A5C6A]/70 cursor-pointer",
         className
       )}
       {...props}
     >
-      {children}
+      {/* Specular metallic top sheen */}
+      <div className="absolute inset-x-0 top-0 h-12 bg-gradient-to-b from-[#4A5C6A]/20 via-[#253745]/10 to-transparent pointer-events-none rounded-t-2xl" />
+      {/* 1px Specular top edge */}
+      <div className="absolute inset-x-0 top-0 h-[1px] bg-gradient-to-r from-transparent via-[#CCD0CF]/35 to-transparent pointer-events-none" />
+      <div className="relative z-10">{children}</div>
     </div>
   )
 }
@@ -168,7 +175,7 @@ export function CardFooter({
   )
 }
 
-// Refined Input component
+// Refined Input component with dark slate capsule style matching design
 export function Input({
   className,
   type,
@@ -178,9 +185,9 @@ export function Input({
     <input
       type={type}
       className={cn(
-        "flex h-10 w-full rounded-xl bg-[#081219] px-3.5 py-2 text-xs sm:text-sm text-[#CCD0CF]",
-        "border border-[#253745]/60 placeholder:text-[#9BA8AB]/50",
-        "transition-colors duration-150",
+        "flex h-11 w-full rounded-xl bg-[#162533] px-4 py-2.5 text-sm text-[#CCD0CF]",
+        "border border-[#253745] placeholder:text-[#9BA8AB]/50",
+        "transition-all duration-150",
         "focus-visible:outline-none focus-visible:border-[#4A5C6A] focus-visible:ring-1 focus-visible:ring-[#4A5C6A]",
         "disabled:cursor-not-allowed disabled:opacity-50",
         className

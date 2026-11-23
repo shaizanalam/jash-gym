@@ -9,12 +9,12 @@ interface LiquidGlassCardProps extends React.HTMLAttributes<HTMLDivElement> {
   blur?: number
   interactive?: boolean
   className?: string
-  glowColor?: "teal" | "ocean" | "mint" | "default"
+  glowColor?: "default" | "slate" | "steel"
 }
 
 /**
- * LiquidGlass component inspired by rdev/liquid-glass-react & iyinchao/liquid-glass-studio.
- * Uses SVG displacement filter for authentic light refraction and dynamic cursor glare tracking.
+ * LiquidGlass component inspired by Apple WWDC Fluid Specular highlights.
+ * Authentic light refraction, metallic sheen header, and dynamic cursor glare tracking.
  */
 export function LiquidGlassCard({
   children,
@@ -50,21 +50,23 @@ export function LiquidGlassCard({
         } as React.CSSProperties
       }
       className={cn(
-        "liquid-glass liquid-glass-hover rounded-3xl p-5 relative overflow-hidden group",
-        isHovered && "ring-1 ring-[#167d8d]/40",
+        "liquid-glass liquid-glass-hover rounded-3xl p-5 relative overflow-hidden group border border-[#253745]/70 bg-[#0f1b24]/90",
+        isHovered && "ring-1 ring-[#4A5C6A]/50",
         className
       )}
       {...props}
     >
+      {/* Specular Metallic Top Sheen */}
+      <div className="absolute inset-x-0 top-0 h-16 bg-gradient-to-b from-[#4A5C6A]/30 via-[#253745]/15 to-transparent pointer-events-none rounded-t-3xl" />
       {/* Specular Edge Highlight */}
-      <div className="absolute inset-x-0 top-0 h-[1px] bg-gradient-to-r from-transparent via-[#b9e4e8]/80 dark:via-[#5b91a3]/40 to-transparent pointer-events-none" />
+      <div className="absolute inset-x-0 top-0 h-[1px] bg-gradient-to-r from-transparent via-[#CCD0CF]/40 to-transparent pointer-events-none" />
 
       {/* Internal Glare Flare */}
       <div
         className="absolute inset-0 pointer-events-none transition-opacity duration-300"
         style={{
           opacity: isHovered ? 1 : 0,
-          background: `radial-gradient(400px circle at ${mousePos.x}% ${mousePos.y}%, rgba(185,228,232,0.18), transparent 45%)`,
+          background: `radial-gradient(400px circle at ${mousePos.x}% ${mousePos.y}%, rgba(204,208,207,0.12), transparent 45%)`,
         }}
       />
 
@@ -104,11 +106,13 @@ export function LiquidGlassButton({
 
   const variantStyles = {
     glass: "btn-liquid-glass",
+    "glass-primary":
+      "bg-[#CCD0CF] text-[#06141B] hover:bg-white shadow-md font-bold border border-white/20",
     "glass-teal":
-      "btn-liquid-glass !bg-[#167d8d]/20 hover:!bg-[#167d8d]/30 !border-[#167d8d]/40 text-[#071b2b] dark:text-[#b9e4e8] !shadow-[#167d8d]/25",
+      "btn-liquid-glass !bg-[#253745]/60 hover:!bg-[#253745]/80 !border-[#4A5C6A]/50 text-[#CCD0CF] !shadow-[#253745]/25",
     "glass-ocean":
-      "btn-liquid-glass !bg-[#2f4a63]/25 hover:!bg-[#2f4a63]/40 !border-[#5b91a3]/35 text-[#071b2b] dark:text-[#f4f8fa] !shadow-[#2f4a63]/25",
-    "glass-subtle": "liquid-glass-pill hover:bg-white/80 dark:hover:bg-[#131b2b]/80 text-[#071b2b] dark:text-[#f4f8fa]",
+      "btn-liquid-glass !bg-[#182C3D]/60 hover:!bg-[#182C3D]/80 !border-[#4A5C6A]/40 text-[#CCD0CF] !shadow-[#182C3D]/25",
+    "glass-subtle": "btn-liquid-glass hover:bg-[#182C3D]/80 text-[#9BA8AB] hover:text-[#CCD0CF]",
   }
 
   const sizeStyles = {

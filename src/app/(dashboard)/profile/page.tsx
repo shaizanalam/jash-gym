@@ -218,7 +218,7 @@ export default function ProfilePage() {
           </div>
 
           <div className="pt-2">
-            <Button type="submit" variant="accent" size="default" disabled={savingProfile} className="w-full">
+            <Button type="submit" variant="primary" size="default" disabled={savingProfile} className="w-full rounded-full shadow-md">
               {savingProfile ? "Saving..." : "Save Preferences"}
             </Button>
           </div>

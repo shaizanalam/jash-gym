@@ -341,8 +341,9 @@ export default function Scanner() {
 
             <div className="flex items-center gap-2.5 mt-5">
               <Button
-                variant="accent"
+                variant="primary"
                 size="sm"
+                className="rounded-full shadow-md"
                 onClick={() => fileInputRef.current?.click()}
               >
                 <Upload className="h-3.5 w-3.5 mr-1.5" />
@@ -351,6 +352,7 @@ export default function Scanner() {
               <Button
                 variant="secondary"
                 size="sm"
+                className="rounded-full"
                 onClick={startCamera}
               >
                 <Camera className="h-3.5 w-3.5 mr-1.5" />
@@ -447,11 +449,11 @@ export default function Scanner() {
 
               <div className="space-y-2 pt-4 border-t border-[#253745]/40">
                 <Button
-                  variant="accent"
+                  variant="primary"
                   size="lg"
                   onClick={analyzeMeal}
                   disabled={loading}
-                  className="w-full"
+                  className="w-full rounded-full shadow-lg"
                 >
                   {loading ? (
                     <>
@@ -668,15 +670,15 @@ export default function Scanner() {
 
           {/* Action Footer */}
           <div className="flex flex-col sm:flex-row items-center justify-between gap-3 pt-2">
-            <Button variant="outline" size="default" onClick={resetAll} className="w-full sm:w-auto">
+            <Button variant="outline" size="default" onClick={resetAll} className="w-full sm:w-auto rounded-full">
               Discard
             </Button>
             <Button
-              variant="accent"
+              variant="primary"
               size="lg"
               onClick={saveEntries}
               disabled={saving || items.length === 0}
-              className="w-full sm:w-auto min-w-[200px]"
+              className="w-full sm:w-auto min-w-[200px] rounded-full shadow-lg"
             >
               {saving ? (
                 <>

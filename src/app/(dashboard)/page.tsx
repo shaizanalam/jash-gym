@@ -130,13 +130,13 @@ export default async function Home() {
 
         {/* Quick action buttons */}
         <div className="flex items-center gap-2">
-          <Button variant="secondary" asChild size="sm">
+          <Button variant="secondary" asChild size="sm" className="rounded-full">
             <Link href="/journal">
               <Plus className="h-3.5 w-3.5 mr-1 text-[#9BA8AB]" />
               <span>Log Food</span>
             </Link>
           </Button>
-          <Button variant="accent" asChild size="sm">
+          <Button variant="primary" asChild size="sm" className="rounded-full shadow-md">
             <Link href="/scanner">
               <Camera className="h-3.5 w-3.5 mr-1" />
               <span>Scan Food</span>
@@ -275,7 +275,7 @@ export default async function Home() {
       {/* 5. Weekly intake trend & 6. Today's meal progress */}
       <div className="grid grid-cols-1 lg:grid-cols-12 gap-4">
         {/* Weekly Trend Card (7 cols on lg) */}
-        <Card className="lg:col-span-7 flex flex-col">
+        <Card glass hoverable className="lg:col-span-7 flex flex-col">
           <CardHeader className="pb-2">
             <div className="flex items-center justify-between">
               <div>
@@ -295,7 +295,7 @@ export default async function Home() {
         </Card>
 
         {/* 6. Today's Meal Progress (5 cols on lg) */}
-        <Card className="lg:col-span-5 flex flex-col">
+        <Card glass hoverable className="lg:col-span-5 flex flex-col">
           <CardHeader className="pb-2">
             <div className="flex items-center justify-between">
               <div>

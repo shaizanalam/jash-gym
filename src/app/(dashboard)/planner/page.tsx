@@ -431,14 +431,16 @@ export default function PlannerPage() {
               type="button"
               variant="outline"
               size="sm"
+              className="rounded-full"
               onClick={() => setModalOpen(false)}
             >
               Cancel
             </Button>
             <Button
               type="submit"
-              variant="accent"
+              variant="primary"
               size="sm"
+              className="rounded-full shadow-md"
               disabled={savingItem || !newItemName.trim()}
             >
               {savingItem ? "Adding..." : "Add to Routine"}
