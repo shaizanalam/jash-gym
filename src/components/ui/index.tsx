@@ -10,6 +10,7 @@ export function cn(...inputs: ClassValue[]) {
 // --- UI Components ---
 
 export { LiquidGlassCard, LiquidGlassButton } from "./liquid-glass"
+export { SmoothPageTransition, AnimeEntrance } from "./anime-motion"
 
 // Button component adhering to Apple HIG (min 44px touch target on mobile + spring physics)
 export function Button({

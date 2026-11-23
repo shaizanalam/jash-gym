@@ -1,6 +1,7 @@
 import { auth } from "@/lib/auth"
 import { redirect } from "next/navigation"
 import { Navigation, DesktopNav } from "@/components/navigation"
+import { SmoothPageTransition } from "@/components/ui/anime-motion"
 
 export default async function DashboardLayout({
   children,
@@ -24,7 +25,9 @@ export default async function DashboardLayout({
         <Navigation />
 
         <main className="flex-1 flex flex-col ios-scroll">
-          {children}
+          <SmoothPageTransition className="flex-1 flex flex-col min-w-0">
+            {children}
+          </SmoothPageTransition>
         </main>
       </div>
     </div>
