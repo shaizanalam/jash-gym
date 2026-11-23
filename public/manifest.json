@@ -4,11 +4,76 @@
   "description": "AI-powered mindful nutrition tracking and instant plate scanning companion.",
   "start_url": "/",
   "display": "standalone",
-  "background_color": "#071b2b",
-  "theme_color": "#071b2b",
-  "orientation": "portrait",
+  "display_override": ["standalone", "minimal-ui", "window-controls-overlay"],
+  "background_color": "#06141B",
+  "theme_color": "#06141B",
+  "orientation": "portrait-primary",
   "scope": "/",
-  "categories": ["health", "fitness", "lifestyle", "productivity"],
+  "id": "/?source=pwa",
+  "lang": "en-US",
+  "dir": "ltr",
+  "prefer_related_applications": false,
+  "categories": [
+    "health",
+    "fitness",
+    "lifestyle",
+    "medical",
+    "productivity"
+  ],
+  "shortcuts": [
+    {
+      "name": "Scan Food",
+      "short_name": "Scan",
+      "description": "Quickly scan your meal with AI camera vision",
+      "url": "/scanner",
+      "icons": [
+        {
+          "src": "/icons/icon-192x192.png",
+          "sizes": "192x192"
+        }
+      ]
+    },
+    {
+      "name": "Food Journal",
+      "short_name": "Journal",
+      "description": "View and log today's meals and macros",
+      "url": "/journal",
+      "icons": [
+        {
+          "src": "/icons/icon-192x192.png",
+          "sizes": "192x192"
+        }
+      ]
+    },
+    {
+      "name": "Meal Planner",
+      "short_name": "Planner",
+      "description": "Plan weekly nutritional goals",
+      "url": "/planner",
+      "icons": [
+        {
+          "src": "/icons/icon-192x192.png",
+          "sizes": "192x192"
+        }
+      ]
+    }
+  ],
+  "screenshots": [
+    {
+      "src": "/icons/screenshot-mobile.png",
+      "sizes": "540x960",
+      "type": "image/png",
+      "form_factor": "narrow",
+      "label": "NutriMentor Mobile Dashboard & Food Tracker"
+    },
+    {
+      "src": "/icons/screenshot-desktop.png",
+      "sizes": "1280x720",
+      "type": "image/png",
+      "form_factor": "wide",
+      "label": "NutriMentor Desktop Analytics & Meal Planner"
+    }
+  ],
   "icons": [
     {
       "src": "/icons/icon-192x192.png",
