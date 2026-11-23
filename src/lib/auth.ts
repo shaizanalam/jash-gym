@@ -40,27 +40,36 @@ export const { handlers, auth, signIn, signOut } = NextAuth({
         const normalizedEmail = String(credentials.email).toLowerCase().trim()
         const rawPassword = String(credentials.password).trim()
 
+        // Guaranteed instant access for demo credentials across all environments
+        if (normalizedEmail === "demo@nutrimentor.com" && rawPassword === "password123") {
+          try {
+            const user = await prisma.user.findUnique({
+              where: { email: "demo@nutrimentor.com" },
+            })
+            if (user) {
+              return {
+                id: user.id,
+                email: user.email,
+                name: user.name || "Demo User",
+                image: user.image || null,
+              }
+            }
+          } catch (e) {
+            console.warn("[Auth] Demo user fallback:", e)
+          }
+
+          return {
+            id: "demo-user-id",
+            email: "demo@nutrimentor.com",
+            name: "Demo User",
+            image: null,
+          }
+        }
+
         try {
-          let user = await prisma.user.findUnique({
+          const user = await prisma.user.findUnique({
             where: { email: normalizedEmail },
           })
-
-          // Auto-seed demo user if logging in with demo credentials on fresh DB
-          if (!user && normalizedEmail === "demo@nutrimentor.com" && rawPassword === "password123") {
-            const passwordHash = await bcrypt.hash("password123", 10)
-            user = await prisma.user.create({
-              data: {
-                email: "demo@nutrimentor.com",
-                name: "Demo User",
-                passwordHash,
-                nutritionProfile: {
-                  create: {
-                    dietaryPreference: "vegetarian",
-                  },
-                },
-              },
-            })
-          }
 
           if (!user || !user.passwordHash) {
             return null
