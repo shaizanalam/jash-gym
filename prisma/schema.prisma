@@ -1,0 +1,257 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "sqlite"
+  url      = env("DATABASE_URL")
+}
+
+model User {
+  id            String    @id @default(uuid()) @unique
+  email         String    @unique
+  name          String?
+  passwordHash  String?
+  image         String?
+  emailVerified DateTime?
+  createdAt     DateTime  @default(now())
+  updatedAt     DateTime  @updatedAt
+
+  accounts          Account[]
+  sessions          Session[]
+  nutritionProfile        NutritionProfile?
+  professionalGuidance    ProfessionalGuidance? @relation("ProfessionalGuidance")
+  foodEntries             FoodEntry[]
+  mealPlans                 MealPlan[]
+  hydrationEntries          HydrationEntry[]
+  customRecipes             CustomRecipe[]
+  uploadedImages            UploadedImage[]
+  foodItemsCreated          FoodItem[] @relation("FoodItemsCreated")
+
+  @@map("users")
+}
+
+model Account {
+  id                String  @id @default(uuid())
+  userId            String
+  type              String
+  provider          String
+  providerAccountId String
+  refresh_token     String?
+  access_token      String?
+  expires_at        Int?
+  token_type        String?
+  scope             String?
+  id_token          String?
+  session_state     String?
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@unique([provider, providerAccountId])
+  @@map("accounts")
+}
+
+model Session {
+  id           String   @id @default(uuid())
+  sessionToken String   @unique
+  userId       String
+  expires      DateTime
+  user         User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@map("sessions")
+}
+
+model NutritionProfile {
+  id                String   @id @default(uuid())
+  userId            String   @unique
+  age               Int?
+  dietaryPreference String?  // vegetarian, non_vegetarian, vegan, eggetarian, jain
+  allergies         String?  // JSON array string
+  restrictions      String?  // JSON array string
+  activityLevel     String?  // sedentary, lightly_active, moderately_active, very_active
+  createdAt         DateTime @default(now())
+  updatedAt         DateTime @updatedAt
+
+  user              User @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@map("nutrition_profiles")
+}
+
+model ProfessionalGuidance {
+  id                    String     @id @default(uuid())
+  userId                String     @unique
+  dailyCalorieRef       Int?
+  dailyProteinRef       Int?
+  dailyCarbsRef         Int?
+  dailyFatRef           Int?
+  sourceNotes           String?
+  enteredByProfessional Boolean    @default(false)
+  createdAt             DateTime   @default(now())
+  updatedAt             DateTime   @updatedAt
+
+  user User @relation("ProfessionalGuidance", fields: [userId], references: [id], onDelete: Cascade)
+
+  @@map("professional_guidance")
+}
+
+model FoodItem {
+  id                String   @id @default(uuid())
+  name              String
+  alternativeNames  String?  // JSON array string
+  category          String   // indian_grain, indian_dal, indian_dairy, indian_sabzi, fruit, vegetable, protein, dairy, snack, beverage, other
+  servingSizeG      Int      // standard serving in grams
+  servingUnit       String?  // e.g. "piece", "bowl", "cup"
+  caloriesPer100g   Float
+  proteinG          Float
+  carbsG            Float
+  fatG              Float
+  fibreG            Float?
+  source            String   // USDA, Custom, NIN, etc.
+  isCustom          Boolean  @default(false)
+  createdByUserId   String?
+  createdAt         DateTime @default(now())
+  updatedAt         DateTime @updatedAt
+
+  createdByUser     User?       @relation("FoodItemsCreated", fields: [createdByUserId], references: [id], onDelete: SetNull)
+  foodEntries       FoodEntry[]
+  mealPlanItems     MealPlanItem[]
+  recipeIngredients RecipeIngredient[]
+
+  @@map("food_items")
+}
+
+model UploadedImage {
+  id           String   @id @default(uuid())
+  userId       String
+  storageUrl   String
+  storageKey   String
+  mimeType     String
+  fileSizeKb   Int
+  aiAnalysis   String?  // JSON string of raw AI response
+  deletedAt    DateTime?
+  createdAt    DateTime @default(now())
+
+  user         User @relation(fields: [userId], references: [id], onDelete: Cascade)
+  foodEntries  FoodEntry[]
+
+  @@map("uploaded_images")
+}
+
+model FoodEntry {
+  id                String   @id @default(uuid())
+  userId            String
+  mealCategory      String   // breakfast, mid_morning_snack, lunch, evening_snack, dinner
+  loggedAt          DateTime @default(now())
+  foodName          String
+  estimatedPortionG Float
+  calories          Float
+  proteinG          Float
+  carbsG            Float
+  fatG              Float
+  fibreG            Float?
+  aiConfidence      String?  // low, medium, high
+  isAiGenerated     Boolean  @default(false)
+  isConfirmedByUser Boolean  @default(false)
+  notes             String?
+  sourceImageId     String?
+  customRecipeId    String?
+  foodItemId        String?
+  createdAt         DateTime @default(now())
+  updatedAt         DateTime @updatedAt
+
+  user         User          @relation(fields: [userId], references: [id], onDelete: Cascade)
+  sourceImage  UploadedImage? @relation(fields: [sourceImageId], references: [id], onDelete: SetNull)
+  customRecipe CustomRecipe?  @relation(fields: [customRecipeId], references: [id], onDelete: SetNull)
+  foodItem     FoodItem?      @relation(fields: [foodItemId], references: [id], onDelete: SetNull)
+
+  @@index([userId, loggedAt])
+  @@index([userId, mealCategory, loggedAt])
+  @@map("food_entries")
+}
+
+model MealPlan {
+  id          String   @id @default(uuid())
+  userId      String
+  planDate    DateTime
+  title       String?
+  isTemplate  Boolean  @default(false)
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+
+  user        User             @relation(fields: [userId], references: [id], onDelete: Cascade)
+  items       MealPlanItem[]
+
+  @@index([userId, planDate])
+  @@map("meal_plans")
+}
+
+model MealPlanItem {
+  id             String   @id @default(uuid())
+  mealPlanId     String
+  mealCategory   String   // breakfast, mid_morning_snack, lunch, evening_snack, dinner
+  plannedTime    String?  // HH:MM
+  foodItemId     String?
+  customRecipeId String?
+  foodName       String
+  portionG       Float?
+  isCompleted    Boolean  @default(false)
+  completedAt    DateTime?
+  notes          String?
+  sortOrder      Int      @default(0)
+
+  mealPlan    MealPlan   @relation(fields: [mealPlanId], references: [id], onDelete: Cascade)
+  foodItem    FoodItem?  @relation(fields: [foodItemId], references: [id], onDelete: SetNull)
+  customRecipe CustomRecipe? @relation(fields: [customRecipeId], references: [id], onDelete: SetNull)
+
+  @@index([mealPlanId, mealCategory])
+  @@map("meal_plan_items")
+}
+
+model CustomRecipe {
+  id             String   @id @default(uuid())
+  userId         String
+  name           String
+  description    String?
+  servings       Int      @default(1)
+  totalCalories  Float    @default(0)
+  totalProteinG  Float    @default(0)
+  totalCarbsG    Float    @default(0)
+  totalFatG      Float    @default(0)
+  totalFibreG    Float?
+  sourceNotes    String?
+  createdAt      DateTime @default(now())
+  updatedAt      DateTime @updatedAt
+
+  user            User              @relation(fields: [userId], references: [id], onDelete: Cascade)
+  ingredients     RecipeIngredient[]
+  foodEntries     FoodEntry[]
+  mealPlanItems   MealPlanItem[]
+
+  @@map("custom_recipes")
+}
+
+model RecipeIngredient {
+  id             String  @id @default(uuid())
+  customRecipeId String
+  foodItemId     String
+  quantityG      Float
+  notes          String?
+
+  customRecipe CustomRecipe @relation(fields: [customRecipeId], references: [id], onDelete: Cascade)
+  foodItem     FoodItem     @relation(fields: [foodItemId], references: [id], onDelete: Cascade)
+
+  @@map("recipe_ingredients")
+}
+
+model HydrationEntry {
+  id        String   @id @default(uuid())
+  userId    String
+  volumeMl  Int
+  loggedAt  DateTime @default(now())
+  createdAt DateTime @default(now())
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@index([userId, loggedAt])
+  @@map("hydration_entries")
+}
