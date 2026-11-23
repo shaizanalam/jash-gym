@@ -19,6 +19,6 @@ if (
   process.env.DATABASE_URL?.includes("file:") ||
   process.env.DATABASE_URL?.includes(".db")
 ) {
-  prisma.$queryRawUnsafe("PRAGMA journal_mode = WAL;").catch(() => {})
-  prisma.$queryRawUnsafe("PRAGMA busy_timeout = 10000;").catch(() => {})
+  prisma.$queryRawUnsafe("PRAGMA journal_mode = WAL;").catch(() => { })
+  prisma.$queryRawUnsafe("PRAGMA busy_timeout = 10000;").catch(() => { })
 }
