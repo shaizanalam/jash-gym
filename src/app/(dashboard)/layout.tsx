@@ -14,7 +14,7 @@ export default async function DashboardLayout({
   }
 
   return (
-    <div className="flex min-h-screen bg-[#f4f8fa] dark:bg-[#071b2b] text-[#071b2b] dark:text-[#f4f8fa] antialiased selection:bg-[#167d8d]/20 selection:text-[#071b2b] dark:selection:text-[#b9e4e8]">
+    <div className="flex min-h-screen bg-[#f7f9fa] dark:bg-[#06141B] text-[#06141B] dark:text-[#CCD0CF] antialiased selection:bg-[#4A5C6A]/25 selection:text-[#06141B] dark:selection:text-[#CCD0CF]">
       {/* Desktop Persistent Sidebar */}
       <DesktopNav />
 

@@ -157,7 +157,7 @@ export function Navigation() {
 
       {/* Floating Capsule Bottom Navigation Bar (matches user design with rounded pill active state, subtle glow & safe area) */}
       <div className="lg:hidden fixed bottom-0 left-0 right-0 z-40 px-4 pb-[max(0.75rem,env(safe-area-inset-bottom,0px))] pointer-events-none flex justify-center">
-        <nav className="pointer-events-auto w-full max-w-md bg-white/95 dark:bg-[#131b2b]/95 backdrop-blur-2xl rounded-[32px] p-2 shadow-[0_12px_40px_rgba(7,27,43,0.14)] dark:shadow-[0_12px_40px_rgba(0,0,0,0.6)] border border-slate-200/80 dark:border-white/10 flex items-center justify-around">
+        <nav className="pointer-events-auto w-full max-w-md bg-white/95 dark:bg-[#11212D]/95 backdrop-blur-2xl rounded-[32px] p-2 shadow-[0_12px_40px_rgba(6,20,27,0.14)] dark:shadow-[0_12px_40px_rgba(0,0,0,0.6)] border border-slate-200/80 dark:border-[#4A5C6A]/30 flex items-center justify-around">
           {BOTTOM_NAV_ITEMS.map((item) => {
             const Icon = item.icon
             const isActive = pathname === item.href
@@ -169,16 +169,16 @@ export function Navigation() {
                 className={cn(
                   "relative flex flex-col items-center justify-center py-2 px-3.5 rounded-[22px] transition-all duration-200 select-none min-h-[48px] min-w-[54px] touch-manipulation active:scale-95",
                   isActive
-                    ? "bg-[#cfeae0]/70 dark:bg-[#167d8d]/30 text-[#071b2b] dark:text-[#b9e4e8] font-bold shadow-2xs"
-                    : "text-slate-500 dark:text-slate-400 hover:text-slate-800 dark:hover:text-slate-200"
+                    ? "bg-[#CCD0CF]/60 dark:bg-[#253745] text-[#06141B] dark:text-[#CCD0CF] font-bold shadow-2xs"
+                    : "text-[#4A5C6A] dark:text-[#9BA8AB] hover:text-[#06141B] dark:hover:text-[#CCD0CF]"
                 )}
               >
                 <Icon
                   className={cn(
                     "h-5 w-5 transition-transform duration-200",
                     isActive
-                      ? "text-[#167d8d] dark:text-[#b9e4e8] scale-110"
-                      : "text-slate-500 dark:text-slate-400"
+                      ? "text-[#11212D] dark:text-[#CCD0CF] scale-110"
+                      : "text-[#4A5C6A] dark:text-[#9BA8AB]"
                   )}
                   strokeWidth={isActive ? 2.4 : 1.8}
                 />
@@ -186,8 +186,8 @@ export function Navigation() {
                   className={cn(
                     "text-[10px] mt-1 tracking-tight transition-colors",
                     isActive
-                      ? "text-[#0d505b] dark:text-[#b9e4e8] font-bold"
-                      : "text-slate-500 dark:text-slate-400 font-medium"
+                      ? "text-[#06141B] dark:text-[#CCD0CF] font-bold"
+                      : "text-[#4A5C6A] dark:text-[#9BA8AB] font-medium"
                   )}
                 >
                   {item.label}
@@ -195,7 +195,7 @@ export function Navigation() {
 
                 {/* Subtle active pill indicator line at the bottom */}
                 {isActive && (
-                  <span className="absolute -bottom-1 h-1 w-6 rounded-full bg-[#167d8d] dark:bg-[#b9e4e8] shadow-sm animate-in fade-in zoom-in-75 duration-200" />
+                  <span className="absolute -bottom-1 h-1 w-6 rounded-full bg-[#253745] dark:bg-[#9BA8AB] shadow-sm animate-in fade-in zoom-in-75 duration-200" />
                 )}
               </Link>
             )

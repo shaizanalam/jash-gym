@@ -30,17 +30,17 @@ export function Button({
 } & React.ButtonHTMLAttributes<HTMLButtonElement>) {
   const variants = {
     default:
-      "bg-gradient-to-r from-[#167d8d] via-[#1a8e9e] to-[#2f4a63] hover:from-[#136b79] hover:to-[#253d53] text-white shadow-sm shadow-[#167d8d]/30 active:from-[#0d505b] active:to-[#1a2d3e]",
+      "bg-gradient-to-r from-[#11212D] via-[#253745] to-[#4A5C6A] hover:from-[#06141B] hover:to-[#253745] text-[#CCD0CF] hover:text-white shadow-sm shadow-[#06141B]/35 active:from-[#06141B] active:to-[#11212D]",
     accent:
-      "bg-[#071b2b] text-white hover:bg-[#131b2b] active:bg-[#040e17] dark:bg-[#b9e4e8] dark:text-[#071b2b] dark:hover:bg-white shadow-sm",
+      "bg-[#06141B] text-[#CCD0CF] hover:bg-[#11212D] active:bg-[#06141B] dark:bg-[#CCD0CF] dark:text-[#06141B] dark:hover:bg-white shadow-sm",
     glass:
-      "btn-liquid-glass hover:border-[#167d8d]/50 hover:shadow-[#167d8d]/20",
+      "btn-liquid-glass hover:border-[#4A5C6A]/50 hover:shadow-[#253745]/20",
     secondary:
-      "bg-[#cfeae0]/40 text-[#071b2b] hover:bg-[#cfeae0]/70 active:bg-[#cfeae0] dark:bg-[#2f4a63]/40 dark:text-[#cfeae0] dark:hover:bg-[#2f4a63]/70",
+      "bg-[#CCD0CF]/40 text-[#06141B] hover:bg-[#CCD0CF]/70 active:bg-[#CCD0CF] dark:bg-[#253745]/50 dark:text-[#CCD0CF] dark:hover:bg-[#253745]/80",
     outline:
-      "border border-[#2f4a63]/20 dark:border-[#5b91a3]/30 bg-white/70 dark:bg-[#131b2b]/70 text-[#071b2b] dark:text-[#f4f8fa] hover:bg-[#cfeae0]/30 dark:hover:bg-[#2f4a63]/30 shadow-2xs hover:border-[#167d8d]/40 hover:shadow-sm",
+      "border border-[#4A5C6A]/30 dark:border-[#9BA8AB]/30 bg-white/70 dark:bg-[#11212D]/70 text-[#06141B] dark:text-[#CCD0CF] hover:bg-[#CCD0CF]/30 dark:hover:bg-[#253745]/40 shadow-2xs hover:border-[#4A5C6A]/50 hover:shadow-sm",
     ghost:
-      "text-[#4e6a7d] hover:text-[#071b2b] hover:bg-[#cfeae0]/30 dark:text-[#8ba5b5] dark:hover:text-[#f4f8fa] dark:hover:bg-[#2f4a63]/30",
+      "text-[#4A5C6A] hover:text-[#06141B] hover:bg-[#CCD0CF]/30 dark:text-[#9BA8AB] dark:hover:text-[#CCD0CF] dark:hover:bg-[#253745]/30",
     destructive:
       "bg-rose-600 text-white hover:bg-rose-700 active:bg-rose-800 shadow-sm shadow-rose-600/25",
   }
@@ -128,21 +128,21 @@ export function Badge({
   className?: string
 }) {
   const variants = {
-    default: "bg-[#071b2b] text-white dark:bg-[#b9e4e8] dark:text-[#071b2b]",
+    default: "bg-[#06141B] text-[#CCD0CF] dark:bg-[#CCD0CF] dark:text-[#06141B]",
     ocean:
-      "bg-[#2f4a63]/15 text-[#2f4a63] border border-[#2f4a63]/25 dark:bg-[#5b91a3]/20 dark:text-[#b9e4e8] dark:border-[#5b91a3]/30",
+      "bg-[#253745]/20 text-[#253745] border border-[#253745]/30 dark:bg-[#4A5C6A]/25 dark:text-[#CCD0CF] dark:border-[#4A5C6A]/40",
     mint:
-      "bg-[#cfeae0]/70 text-[#071b2b] border border-[#cfeae0] dark:bg-[#cfeae0]/15 dark:text-[#cfeae0] dark:border-[#cfeae0]/20",
+      "bg-[#CCD0CF]/60 text-[#06141B] border border-[#9BA8AB]/40 dark:bg-[#9BA8AB]/20 dark:text-[#CCD0CF] dark:border-[#9BA8AB]/30",
     secondary:
-      "bg-slate-100 text-slate-700 border border-slate-200/80 dark:bg-slate-800/80 dark:text-slate-300 dark:border-slate-700/80",
+      "bg-slate-100 text-slate-700 border border-slate-200/80 dark:bg-[#253745] dark:text-[#CCD0CF] dark:border-[#4A5C6A]/40",
     outline:
-      "border border-[#2f4a63]/20 dark:border-[#5b91a3]/30 bg-transparent text-[#071b2b] dark:text-[#f4f8fa]",
+      "border border-[#4A5C6A]/30 dark:border-[#9BA8AB]/30 bg-transparent text-[#06141B] dark:text-[#CCD0CF]",
     success:
-      "bg-[#cfeae0]/80 text-[#0d505b] border border-[#cfeae0] dark:bg-[#167d8d]/30 dark:text-[#b9e4e8] dark:border-[#167d8d]/40",
+      "bg-[#CCD0CF]/70 text-[#11212D] border border-[#9BA8AB]/50 dark:bg-[#4A5C6A]/30 dark:text-[#CCD0CF] dark:border-[#9BA8AB]/40",
     warning:
       "bg-amber-50 text-amber-800 border border-amber-200/70 dark:bg-amber-950/60 dark:text-amber-300 dark:border-amber-800/70",
     info:
-      "bg-[#b9e4e8]/40 text-[#167d8d] border border-[#b9e4e8]/60 dark:bg-[#167d8d]/20 dark:text-[#b9e4e8] dark:border-[#167d8d]/30",
+      "bg-[#9BA8AB]/30 text-[#11212D] border border-[#9BA8AB]/50 dark:bg-[#253745]/40 dark:text-[#CCD0CF] dark:border-[#4A5C6A]/50",
     destructive:
       "bg-rose-50 text-rose-700 border border-rose-200/70 dark:bg-rose-950/60 dark:text-rose-300 dark:border-rose-800/70",
   }
@@ -204,8 +204,8 @@ export function Switch({
       aria-checked={checked}
       onClick={() => onCheckedChange?.(!checked)}
       className={cn(
-        "peer inline-flex h-[26px] w-[46px] shrink-0 cursor-pointer items-center rounded-full border-2 border-transparent transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#167d8d] focus-visible:ring-offset-2 disabled:pointer-events-none disabled:opacity-50 touch-manipulation",
-        checked ? "bg-[#167d8d]" : "bg-slate-200 dark:bg-slate-700",
+        "peer inline-flex h-[26px] w-[46px] shrink-0 cursor-pointer items-center rounded-full border-2 border-transparent transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#4A5C6A] focus-visible:ring-offset-2 disabled:pointer-events-none disabled:opacity-50 touch-manipulation",
+        checked ? "bg-[#253745] dark:bg-[#4A5C6A]" : "bg-slate-200 dark:bg-slate-700",
         className
       )}
       {...props}

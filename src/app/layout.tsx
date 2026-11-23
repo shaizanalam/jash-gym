@@ -7,8 +7,8 @@ const inter = Inter({ subsets: ["latin"], variable: "--font-sans" })
 
 export const viewport: Viewport = {
   themeColor: [
-    { media: "(prefers-color-scheme: light)", color: "#f4f8fa" },
-    { media: "(prefers-color-scheme: dark)", color: "#071b2b" },
+    { media: "(prefers-color-scheme: light)", color: "#f7f9fa" },
+    { media: "(prefers-color-scheme: dark)", color: "#06141B" },
   ],
   width: "device-width",
   initialScale: 1,
@@ -47,7 +47,7 @@ export default function RootLayout({
         <meta name="mobile-web-app-capable" content="yes" />
         <meta name="apple-touch-fullscreen" content="yes" />
       </head>
-      <body className="min-h-full bg-[#f4f8fa] dark:bg-[#071b2b] text-[#071b2b] dark:text-[#f4f8fa] antialiased">
+      <body className="min-h-full bg-[#f7f9fa] dark:bg-[#06141B] text-[#06141B] dark:text-[#CCD0CF] antialiased">
         <Providers>{children}</Providers>
       </body>
     </html>

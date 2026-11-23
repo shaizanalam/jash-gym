@@ -15,32 +15,29 @@
 ---
 
 ## 2. Color Palette & Semantic Roles (60/30/10 Rule)
-Derived from the user-specified Nordic Oceanic & Liquid Glass palette images:
-- **Image 1 Palette (Deep Midnight & Slate Teal):**
-  - Midnight Navy: `#131b2b`
-  - Slate Teal: `#2f4a63`
-  - Ocean Mist: `#5b91a3`
-  - Mint Ice: `#cfeae0`
-- **Image 2 Palette (Deep Cyan & Nordic Ice):**
-  - Abyss Black-Navy: `#071b2b`
-  - Deep Cyan-Teal: `#167d8d` (Brand Accent & Primary CTA)
-  - Arctic Cyan Glow: `#b9e4e8` (Glows & Highlights)
-  - Pure Specular Glare: `#eeeeee` / `#ffffff`
+Derived from the user-specified Monochromatic Slate & Deep Blue palette:
+- **Palette Hex Tokens:**
+  - Deep Abyss: `#06141B` (Dark Canvas Foundation)
+  - Dark Navy: `#11212D` (Elevated Surfaces & Headers)
+  - Slate Blue: `#253745` (Primary Interactive Accent)
+  - Steel Slate: `#4A5C6A` (Muted Controls & Dividers)
+  - Silver Mist: `#9BA8AB` (Secondary Text & Glows)
+  - Pearl White: `#CCD0CF` (Light Highlights & Chip Fills)
 
 ### Systematic Roles
 - **Canvas Neutral (60%):**
-  - Light Canvas: `#f4f8fa` | Surface Card: `#ffffff`
-  - Dark Canvas: `#071b2b` (Deep Abyssal Navy) | Surface Card: `#131b2b` (Midnight)
+  - Light Canvas: `#f7f9fa` | Surface Card: `#ffffff`
+  - Dark Canvas: `#06141B` (Deep Abyss) | Surface Card: `#11212D` (Dark Navy)
 - **Structural Text (30%):**
-  - Primary Headings: `#071b2b` (Light) / `#f4f8fa` (Dark)
-  - Secondary Text: `#4e6a7d` (Light) / `#8ba5b5` (Dark)
-  - Hairline Borders: `rgba(47, 74, 99, 0.18)` (Light) / `rgba(91, 145, 163, 0.22)` (Dark)
+  - Primary Headings: `#06141B` (Light) / `#CCD0CF` (Dark)
+  - Secondary Text: `#4A5C6A` (Light) / `#9BA8AB` (Dark)
+  - Hairline Borders: `rgba(74, 92, 106, 0.2)` (Light) / `rgba(155, 168, 171, 0.22)` (Dark)
 - **Brand Accent (10%):**
-  - Primary Accent: `#167d8d` (Deep Cyan-Teal)
-  - Hover Accent: `#11626f`
-  - Dark Accent: `#1995a8` / `#b9e4e8`
-  - Accent Tint: `rgba(22, 125, 141, 0.12)` for secondary badges and subtle card glows
-  - Mint Ice Accent: `#cfeae0`
+  - Primary Accent: `#253745` (Slate Blue)
+  - Hover Accent: `#11212D`
+  - Dark Accent: `#4A5C6A` / `#CCD0CF`
+  - Accent Tint: `rgba(37, 55, 69, 0.15)` for secondary badges and subtle card glows
+  - Pearl White Highlight: `#CCD0CF`
 - **Nutritional Semantic Chips:**
   - Calories: Amber `#f59e0b` (`bg-amber-500/10 text-amber-700`)
   - Protein: Deep Teal `#167d8d` (`bg-[#167d8d]/15 text-[#167d8d] dark:text-[#b9e4e8]`)
