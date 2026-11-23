@@ -55,11 +55,12 @@ export const { handlers, auth, signIn, signOut } = NextAuth({
               }
             }
           } catch (e) {
-            console.warn("[Auth] Demo user fallback:", e)
+            console.warn("[Auth] Demo user lookup error:", e)
           }
 
+          // Stable fallback with matching database UUID
           return {
-            id: "demo-user-id",
+            id: "fbcc7c6d-515d-4803-b907-7fab07656ff3",
             email: "demo@nutrimentor.com",
             name: "Demo User",
             image: null,

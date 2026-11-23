@@ -18,5 +18,12 @@ try {
   console.warn('⚠️ [Build Script] prisma db push encountered a warning, continuing to next build...');
 }
 
+try {
+  console.log('📦 [Build Script] Updating embedded database fallback...');
+  require('./make-fallback.js');
+} catch (err) {
+  console.warn('⚠️ [Build Script] Could not refresh fallback DB, continuing...');
+}
+
 console.log('🚀 [Build Script] Building Next.js production bundle...');
 execSync('next build', { stdio: 'inherit', env: process.env });

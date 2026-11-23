@@ -11,6 +11,9 @@ const nextConfig: NextConfig = {
     "localhost",
     "localhost:3000",
   ],
+  outputFileTracingIncludes: {
+    "/**": ["./prisma/**/*"],
+  },
   turbopack: {
     rules: {
       "*.css": {
