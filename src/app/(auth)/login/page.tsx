@@ -12,12 +12,17 @@ function LoginForm() {
   const router = useRouter()
   const searchParams = useSearchParams()
   const registered = searchParams.get("registered")
+  const urlError = searchParams.get("error")
 
   const [email, setEmail] = useState("")
   const [password, setPassword] = useState("")
   const [showPassword, setShowPassword] = useState(false)
   const [loading, setLoading] = useState(false)
-  const [error, setError] = useState("")
+  const [error, setError] = useState(
+    urlError
+      ? "Invalid email or password. If you haven't created an account yet, please sign up first."
+      : ""
+  )
   const [success, setSuccess] = useState(
     registered ? "Account created successfully! Please sign in." : ""
   )
@@ -52,7 +57,7 @@ function LoginForm() {
       })
 
       if (result?.error) {
-        setError("Invalid email or password. Please try again.")
+        setError("Invalid email or password. If you haven't created an account yet, please sign up first.")
         setLoading(false)
         return
       }

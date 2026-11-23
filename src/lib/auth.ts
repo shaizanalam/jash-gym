@@ -3,6 +3,14 @@ import CredentialsProvider from "next-auth/providers/credentials"
 import bcrypt from "bcryptjs"
 import { prisma } from "@/lib/prisma"
 
+// Strip localhost NEXTAUTH_URL so Auth.js dynamically adapts to mobile IP (192.168.x.x) and Vercel domains
+if (process.env.NEXTAUTH_URL?.includes("localhost")) {
+  delete process.env.NEXTAUTH_URL
+}
+if (process.env.AUTH_URL?.includes("localhost")) {
+  delete process.env.AUTH_URL
+}
+
 export const { handlers, auth, signIn, signOut } = NextAuth({
   trustHost: true,
   secret:
