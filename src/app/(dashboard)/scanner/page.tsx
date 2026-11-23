@@ -157,12 +157,6 @@ export default function Scanner() {
           {/* Header */}
           <div className="flex items-center justify-between pb-1">
             <div>
-              <div className="flex items-center gap-2 mb-1">
-                <span className="inline-flex items-center gap-1.5 px-2.5 py-0.5 rounded-full text-xs font-semibold bg-emerald-500/20 text-emerald-300 border border-emerald-500/30">
-                  <Sparkles className="h-3 w-3 text-emerald-400" />
-                  AI Vision Powered
-                </span>
-              </div>
               <h1 className="text-xl sm:text-2xl font-bold text-white tracking-tight">
                 Scan Your Meal
               </h1>

@@ -113,9 +113,6 @@ export default async function Home() {
           <h1 className="text-2xl sm:text-3xl font-bold text-slate-900 dark:text-white tracking-tight">
             {greetingTime}, {firstName}!
           </h1>
-          <p className="text-sm text-slate-500 dark:text-slate-400 mt-1">
-            Track your meals mindfully with AI-powered instant recognition.
-          </p>
         </div>
 
         {/* Quick action buttons */}
@@ -396,21 +393,6 @@ export default async function Home() {
           </CardContent>
         </Card>
       )}
-
-      {/* AI Transparency & Estimation Card */}
-      <div className="rounded-2xl p-4 sm:p-5 border border-emerald-200/70 dark:border-emerald-900/40 bg-gradient-to-r from-emerald-500/5 via-teal-500/5 to-transparent flex items-start gap-3.5 shadow-2xs">
-        <div className="h-9 w-9 rounded-xl bg-emerald-500/10 text-emerald-600 dark:text-emerald-400 flex items-center justify-center shrink-0 mt-0.5">
-          <Sparkles className="h-5 w-5" />
-        </div>
-        <div className="flex-1 text-xs">
-          <p className="font-semibold text-slate-900 dark:text-slate-100 text-sm">
-            AI Nutrition Transparency
-          </p>
-          <p className="text-slate-600 dark:text-slate-400 mt-1 leading-relaxed">
-            Nutritional estimates are approximated using machine vision and Indian regional food databases. These values serve as educational references rather than strict medical prescriptions. You can adjust portions anytime.
-          </p>
-        </div>
-      </div>
     </div>
   )
 }
