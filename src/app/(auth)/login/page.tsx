@@ -42,23 +42,34 @@ function LoginForm() {
     setLoading(true)
 
     try {
+      const normalizedEmail = email.toLowerCase().trim()
+      const rawPassword = password.trim()
+
       const result = await signIn("credentials", {
-        email,
-        password,
+        email: normalizedEmail,
+        password: rawPassword,
         redirect: false,
       })
 
       if (result?.error) {
-        setError("Invalid email or password.")
-      } else {
-        router.push("/")
-        router.refresh()
+        setError("Invalid email or password. Please try again.")
+        setLoading(false)
+        return
       }
+
+      // Hard redirect ensures session cookie is flushed and picked up by server layout
+      window.location.href = "/"
     } catch (err) {
+      console.error("[Login] submit error:", err)
       setError("Login failed. Please try again.")
-    } finally {
       setLoading(false)
     }
+  }
+
+  const handleFillDemo = () => {
+    setEmail("demo@nutrimentor.com")
+    setPassword("password123")
+    setError("")
   }
 
   return (
@@ -136,6 +147,15 @@ function LoginForm() {
             className="w-full h-12 mt-3 rounded-full bg-[#CCD0CF] hover:bg-white text-[#06141B] text-sm font-bold shadow-md hover:shadow-lg active:scale-[0.98] transition-all duration-150 flex items-center justify-center cursor-pointer"
           >
             {loading ? "Signing in..." : "Log in"}
+          </button>
+
+          {/* Quick Demo Fill button */}
+          <button
+            type="button"
+            onClick={handleFillDemo}
+            className="w-full h-9 rounded-full bg-[#182C3D]/60 hover:bg-[#253745]/70 text-[#9BA8AB] hover:text-[#CCD0CF] text-xs font-medium border border-[#253745]/60 transition-all flex items-center justify-center cursor-pointer"
+          >
+            Fill Demo Account (demo@nutrimentor.com)
           </button>
         </form>
 

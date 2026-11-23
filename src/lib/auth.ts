@@ -1,12 +1,14 @@
 import NextAuth from "next-auth"
-import { PrismaAdapter } from "@auth/prisma-adapter"
 import CredentialsProvider from "next-auth/providers/credentials"
 import bcrypt from "bcryptjs"
 import { prisma } from "@/lib/prisma"
 
 export const { handlers, auth, signIn, signOut } = NextAuth({
-  secret: process.env.AUTH_SECRET || process.env.NEXTAUTH_SECRET,
-  adapter: PrismaAdapter(prisma),
+  trustHost: true,
+  secret:
+    process.env.AUTH_SECRET ||
+    process.env.NEXTAUTH_SECRET ||
+    "nutrimentor-jwt-secret-key-32chars-fallback-secure",
   session: {
     strategy: "jwt",
     maxAge: 30 * 24 * 60 * 60,
@@ -21,35 +23,59 @@ export const { handlers, auth, signIn, signOut } = NextAuth({
       credentials: {
         email: { label: "Email", type: "email" },
         password: { label: "Password", type: "password" },
-        action: { label: "Action", type: "text" },
       },
       async authorize(credentials) {
         if (!credentials?.email || !credentials?.password) {
-          throw new Error("Invalid credentials")
+          return null
         }
 
-        const user = await prisma.user.findUnique({
-          where: { email: credentials.email as string },
-        })
+        const normalizedEmail = String(credentials.email).toLowerCase().trim()
+        const rawPassword = String(credentials.password).trim()
 
-        if (!user || !user.passwordHash) {
-          throw new Error("Invalid credentials")
-        }
+        try {
+          let user = await prisma.user.findUnique({
+            where: { email: normalizedEmail },
+          })
 
-        const isPasswordValid = await bcrypt.compare(
-          credentials.password as string,
-          user.passwordHash
-        )
+          // Auto-seed demo user if logging in with demo credentials on fresh DB
+          if (!user && normalizedEmail === "demo@nutrimentor.com" && rawPassword === "password123") {
+            const passwordHash = await bcrypt.hash("password123", 10)
+            user = await prisma.user.create({
+              data: {
+                email: "demo@nutrimentor.com",
+                name: "Demo User",
+                passwordHash,
+                nutritionProfile: {
+                  create: {
+                    dietaryPreference: "vegetarian",
+                  },
+                },
+              },
+            })
+          }
 
-        if (!isPasswordValid) {
-          throw new Error("Invalid credentials")
-        }
+          if (!user || !user.passwordHash) {
+            return null
+          }
 
-        return {
-          id: user.id,
-          email: user.email,
-          name: user.name,
-          image: user.image,
+          const isPasswordValid = await bcrypt.compare(
+            rawPassword,
+            user.passwordHash
+          )
+
+          if (!isPasswordValid) {
+            return null
+          }
+
+          return {
+            id: user.id,
+            email: user.email,
+            name: user.name || "User",
+            image: user.image || null,
+          }
+        } catch (error) {
+          console.error("[Auth] Database authorize error:", error)
+          return null
         }
       },
     }),
@@ -59,12 +85,15 @@ export const { handlers, auth, signIn, signOut } = NextAuth({
       if (user) {
         token.id = user.id
         token.email = user.email
+        token.name = user.name
       }
       return token
     },
     async session({ session, token }) {
       if (session.user) {
         session.user.id = token.id as string
+        if (token.email) session.user.email = token.email as string
+        if (token.name) session.user.name = token.name as string
       }
       return session
     },

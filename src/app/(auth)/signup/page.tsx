@@ -54,17 +54,18 @@ export default function SignupPage() {
       }
 
       // Automatically sign in upon registration
+      const normalizedEmail = email.toLowerCase().trim()
+      const rawPassword = password.trim()
       const result = await signIn("credentials", {
-        email,
-        password,
+        email: normalizedEmail,
+        password: rawPassword,
         redirect: false,
       })
 
       if (result?.error) {
-        router.push("/login?registered=true")
+        window.location.href = "/login?registered=true"
       } else {
-        router.push("/")
-        router.refresh()
+        window.location.href = "/"
       }
     } catch (err) {
       setError("Signup failed. Please try again.")
