@@ -1,23 +1,16 @@
 import { auth } from "@/lib/auth"
 import { prisma } from "@/lib/prisma"
 import { formatDateIST, startOfDayIST } from "@/lib/dates"
-import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/index"
-import { Button } from "@/components/ui/index"
-import { Badge } from "@/components/ui/index"
+import { Card, CardContent, CardHeader, CardTitle, CardDescription, Button, Badge, Progress } from "@/components/ui/index"
 import {
   Plus,
-  Clock,
-  Droplet,
-  Flame,
-  Leaf,
-  Egg,
-  Info,
   Camera,
+  Calendar,
+  UtensilsCrossed,
   ArrowRight,
   TrendingUp,
-  Sparkles,
   CheckCircle2,
-  Utensils,
+  List,
 } from "lucide-react"
 import { DashboardTrendChart } from "@/components/charts/nutrition-charts"
 import { MEAL_CATEGORIES } from "@/lib/constants"
@@ -34,7 +27,7 @@ export default async function Home() {
   const sevenDaysAgo = new Date(today)
   sevenDaysAgo.setDate(sevenDaysAgo.getDate() - 6)
 
-  const [entries, weekEntries, profile] = await Promise.all([
+  const [entries, weekEntries, profile, guidance] = await Promise.all([
     prisma.foodEntry.findMany({
       where: {
         userId,
@@ -50,6 +43,7 @@ export default async function Home() {
       orderBy: { loggedAt: "asc" },
     }),
     prisma.nutritionProfile.findUnique({ where: { userId } }),
+    prisma.professionalGuidance.findUnique({ where: { userId } }),
   ])
 
   // Build 7-day trend
@@ -75,9 +69,11 @@ export default async function Home() {
     }
   })
 
-  // Calculate 7-day average
-  const totalWeeklyCalories = Object.values(daysMap).reduce((a, b) => a + b, 0)
-  const averageDailyCalories = Math.round(totalWeeklyCalories / 7)
+  // 7-day average of logged days only (to avoid misleading averages on zero-log days)
+  const loggedCaloriesList = Object.values(daysMap).filter((c) => c > 0)
+  const averageDailyCalories = loggedCaloriesList.length
+    ? Math.round(loggedCaloriesList.reduce((a, b) => a + b, 0) / loggedCaloriesList.length)
+    : 0
 
   const summary = entries.reduce(
     (acc, e) => ({
@@ -89,6 +85,14 @@ export default async function Home() {
     }),
     { calories: 0, protein: 0, carbs: 0, fat: 0, fibre: 0 }
   )
+
+  const targetCalories = guidance?.dailyCalorieRef || 2000
+  const targetProtein = guidance?.dailyProteinRef || 120
+  const targetCarbs = guidance?.dailyCarbsRef || 250
+  const targetFat = guidance?.dailyFatRef || 65
+
+  const remainingCalories = Math.max(0, targetCalories - summary.calories)
+  const caloriePercent = Math.min(100, Math.round((summary.calories / targetCalories) * 100))
 
   const byMeal = MEAL_CATEGORIES.map((cat) => {
     const items = entries.filter((e) => e.mealCategory === cat.id)
@@ -103,231 +107,254 @@ export default async function Home() {
   else if (currentHour < 17) greetingTime = "Good afternoon"
   else greetingTime = "Good evening"
 
-  const firstName = session.user.name ? session.user.name.split(" ")[0] : "Friend"
+  const firstName = session.user.name ? session.user.name.split(" ")[0] : "there"
+  const formattedToday = new Intl.DateTimeFormat("en-US", {
+    weekday: "long",
+    month: "short",
+    day: "numeric",
+  }).format(new Date())
 
   return (
     <div className="flex-1 overflow-y-auto p-4 sm:p-6 lg:p-8 space-y-6 max-w-6xl w-full mx-auto">
-      {/* Welcome Header */}
-      <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4 pb-2">
+      {/* 1. Greeting and date & 2. Quick actions */}
+      <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4 pb-1">
         <div>
-          <h1 className="text-2xl sm:text-3xl font-bold text-slate-900 dark:text-white tracking-tight">
-            {greetingTime}, {firstName}!
+          <div className="flex items-center gap-2 text-xs text-[#9BA8AB] font-medium">
+            <Calendar className="h-3.5 w-3.5" />
+            <span>{formattedToday}</span>
+          </div>
+          <h1 className="text-xl sm:text-2xl font-bold text-[#CCD0CF] tracking-tight mt-1">
+            {greetingTime}, {firstName}
           </h1>
         </div>
 
         {/* Quick action buttons */}
-        <div className="flex items-center gap-2.5">
-          <Button variant="glass" asChild size="default" className="shadow-2xs">
+        <div className="flex items-center gap-2">
+          <Button variant="secondary" asChild size="sm">
             <Link href="/journal">
-              <Plus className="h-4 w-4 mr-1.5 text-slate-500" />
-              <span>Log Meal</span>
+              <Plus className="h-3.5 w-3.5 mr-1 text-[#9BA8AB]" />
+              <span>Log Food</span>
             </Link>
           </Button>
-          <Button asChild size="default" className="shadow-md shadow-emerald-600/30">
+          <Button variant="accent" asChild size="sm">
             <Link href="/scanner">
-              <Camera className="h-4 w-4 mr-1.5" />
+              <Camera className="h-3.5 w-3.5 mr-1" />
               <span>Scan Food</span>
             </Link>
           </Button>
         </div>
       </div>
 
-      {/* Bento Nutrition Metrics Grid */}
-      <div className="space-y-3">
-        <div className="flex items-center justify-between">
-          <h2 className="text-sm font-bold uppercase tracking-wider text-slate-500 dark:text-slate-400 flex items-center gap-1.5">
-            <Flame className="h-4 w-4 text-amber-500" />
-            Today's Nutrition Breakdown
-          </h2>
-          <span className="text-xs text-slate-400 dark:text-slate-500">Informational estimates</span>
-        </div>
-
-        <div className="grid grid-cols-2 md:grid-cols-5 gap-3 sm:gap-4">
-          {/* Calories Highlight Card */}
-          <div className="col-span-2 md:col-span-1 rounded-2xl sm:rounded-3xl p-4 bg-gradient-to-br from-amber-500/10 via-orange-500/5 to-transparent border border-amber-200/70 dark:border-amber-800/40 relative overflow-hidden flex flex-col justify-between shadow-2xs liquid-glass-hover">
-            <div className="flex items-center justify-between">
-              <span className="text-xs font-semibold text-amber-800 dark:text-amber-300">Calories</span>
-              <div className="h-8 w-8 rounded-xl bg-amber-500/15 text-amber-600 dark:text-amber-400 flex items-center justify-center">
-                <Flame className="h-4 w-4" />
-              </div>
-            </div>
-            <div className="my-2">
-              <div className="text-3xl font-extrabold tracking-tight text-slate-900 dark:text-white tabular-nums">
-                {Math.round(summary.calories)}
-              </div>
-              <span className="text-xs font-medium text-amber-700/80 dark:text-amber-400/80">kcal total</span>
-            </div>
-            <div className="text-[11px] text-slate-500 dark:text-slate-400">
-              {entries.length} items logged today
-            </div>
+      {/* 3. Daily nutrition overview & 4. Macro breakdown (Compact, refined height) */}
+      <div className="grid grid-cols-1 md:grid-cols-12 gap-3 sm:gap-4">
+        {/* Calories Primary Card */}
+        <Card className="md:col-span-4 p-4 flex flex-col justify-between">
+          <div className="flex items-center justify-between pb-2">
+            <span className="text-xs font-medium text-[#9BA8AB]">Daily Calories</span>
+            <Badge variant="amber" className="text-[10px]">
+              {caloriePercent}% target
+            </Badge>
           </div>
 
-          {/* Protein Card */}
-          <div className="rounded-2xl sm:rounded-3xl p-4 bg-white/80 dark:bg-slate-900/80 backdrop-blur-md border border-slate-200/80 dark:border-slate-800/80 flex flex-col justify-between shadow-2xs liquid-glass-hover">
-            <div className="flex items-center justify-between">
-              <span className="text-xs font-semibold text-slate-600 dark:text-slate-400">Protein</span>
-              <div className="h-8 w-8 rounded-xl bg-emerald-500/10 text-emerald-600 dark:text-emerald-400 flex items-center justify-center">
-                <Egg className="h-4 w-4" />
-              </div>
+          <div className="my-2">
+            <div className="flex items-baseline gap-1.5">
+              <span className="text-2xl sm:text-3xl font-bold text-[#CCD0CF] tabular-nums">
+                {Math.round(summary.calories).toLocaleString()}
+              </span>
+              <span className="text-xs text-[#9BA8AB]">/ {targetCalories.toLocaleString()} kcal</span>
             </div>
-            <div className="my-2">
-              <div className="text-2xl font-bold tracking-tight text-slate-900 dark:text-white tabular-nums">
-                {summary.protein.toFixed(1)}
-              </div>
-              <span className="text-xs font-medium text-emerald-600 dark:text-emerald-400">grams</span>
-            </div>
-            <div className="text-[11px] text-slate-400">
-              Build & repair
-            </div>
+            <p className="text-[11px] text-[#9BA8AB] mt-0.5">
+              {remainingCalories > 0
+                ? `${Math.round(remainingCalories).toLocaleString()} kcal remaining today`
+                : `${Math.round(summary.calories - targetCalories)} kcal over target`}
+            </p>
           </div>
 
-          {/* Carbs Card */}
-          <div className="rounded-2xl sm:rounded-3xl p-4 bg-white/80 dark:bg-slate-900/80 backdrop-blur-md border border-slate-200/80 dark:border-slate-800/80 flex flex-col justify-between shadow-2xs liquid-glass-hover">
-            <div className="flex items-center justify-between">
-              <span className="text-xs font-semibold text-slate-600 dark:text-slate-400">Carbs</span>
-              <div className="h-8 w-8 rounded-xl bg-sky-500/10 text-sky-600 dark:text-sky-400 flex items-center justify-center">
-                <Leaf className="h-4 w-4" />
-              </div>
-            </div>
-            <div className="my-2">
-              <div className="text-2xl font-bold tracking-tight text-slate-900 dark:text-white tabular-nums">
-                {summary.carbs.toFixed(1)}
-              </div>
-              <span className="text-xs font-medium text-sky-600 dark:text-sky-400">grams</span>
-            </div>
-            <div className="text-[11px] text-slate-400">
-              Daily energy
-            </div>
+          <div className="pt-2">
+            <Progress
+              value={summary.calories}
+              max={targetCalories}
+              className="h-2 bg-[#11212D]"
+              barClassName="bg-amber-500"
+            />
           </div>
+        </Card>
 
-          {/* Fat Card */}
-          <div className="rounded-2xl sm:rounded-3xl p-4 bg-white/80 dark:bg-slate-900/80 backdrop-blur-md border border-slate-200/80 dark:border-slate-800/80 flex flex-col justify-between shadow-2xs liquid-glass-hover">
+        {/* 4 Compact Macro Breakdown Cards */}
+        <div className="md:col-span-8 grid grid-cols-2 sm:grid-cols-4 gap-2.5 sm:gap-3">
+          {/* Protein (Green) */}
+          <Card className="p-3.5 flex flex-col justify-between">
             <div className="flex items-center justify-between">
-              <span className="text-xs font-semibold text-slate-600 dark:text-slate-400">Fat</span>
-              <div className="h-8 w-8 rounded-xl bg-amber-500/10 text-amber-600 dark:text-amber-400 flex items-center justify-center">
-                <Droplet className="h-4 w-4" />
+              <span className="text-xs font-medium text-[#9BA8AB]">Protein</span>
+              <span className="h-2 w-2 rounded-full bg-emerald-500" />
+            </div>
+            <div className="my-1.5">
+              <div className="text-lg font-bold text-[#CCD0CF] tabular-nums">
+                {summary.protein.toFixed(1)} <span className="text-xs font-normal text-[#9BA8AB]">g</span>
               </div>
+              <span className="text-[10px] text-[#9BA8AB] block truncate">
+                Target: {targetProtein}g
+              </span>
             </div>
-            <div className="my-2">
-              <div className="text-2xl font-bold tracking-tight text-slate-900 dark:text-white tabular-nums">
-                {summary.fat.toFixed(1)}
-              </div>
-              <span className="text-xs font-medium text-amber-600 dark:text-amber-400">grams</span>
-            </div>
-            <div className="text-[11px] text-slate-400">
-              Essential fats
-            </div>
-          </div>
+            <Progress
+              value={summary.protein}
+              max={targetProtein}
+              className="h-1 bg-[#11212D]"
+              barClassName="bg-emerald-500"
+            />
+          </Card>
 
-          {/* Fibre Card */}
-          <div className="rounded-2xl p-4 bg-white dark:bg-slate-900/90 border border-slate-200/80 dark:border-slate-800/80 flex flex-col justify-between shadow-2xs">
+          {/* Carbs (Cyan) */}
+          <Card className="p-3.5 flex flex-col justify-between">
             <div className="flex items-center justify-between">
-              <span className="text-xs font-semibold text-slate-600 dark:text-slate-400">Fibre</span>
-              <div className="h-8 w-8 rounded-xl bg-purple-500/10 text-purple-600 dark:text-purple-400 flex items-center justify-center">
-                <Leaf className="h-4 w-4" />
+              <span className="text-xs font-medium text-[#9BA8AB]">Carbs</span>
+              <span className="h-2 w-2 rounded-full bg-cyan-500" />
+            </div>
+            <div className="my-1.5">
+              <div className="text-lg font-bold text-[#CCD0CF] tabular-nums">
+                {summary.carbs.toFixed(1)} <span className="text-xs font-normal text-[#9BA8AB]">g</span>
               </div>
+              <span className="text-[10px] text-[#9BA8AB] block truncate">
+                Target: {targetCarbs}g
+              </span>
             </div>
-            <div className="my-2">
-              <div className="text-2xl font-bold tracking-tight text-slate-900 dark:text-white tabular-nums">
-                {summary.fibre.toFixed(1)}
+            <Progress
+              value={summary.carbs}
+              max={targetCarbs}
+              className="h-1 bg-[#11212D]"
+              barClassName="bg-cyan-500"
+            />
+          </Card>
+
+          {/* Fat (Amber) */}
+          <Card className="p-3.5 flex flex-col justify-between">
+            <div className="flex items-center justify-between">
+              <span className="text-xs font-medium text-[#9BA8AB]">Fat</span>
+              <span className="h-2 w-2 rounded-full bg-amber-500" />
+            </div>
+            <div className="my-1.5">
+              <div className="text-lg font-bold text-[#CCD0CF] tabular-nums">
+                {summary.fat.toFixed(1)} <span className="text-xs font-normal text-[#9BA8AB]">g</span>
               </div>
-              <span className="text-xs font-medium text-purple-600 dark:text-purple-400">grams</span>
+              <span className="text-[10px] text-[#9BA8AB] block truncate">
+                Target: {targetFat}g
+              </span>
             </div>
-            <div className="text-[11px] text-slate-400">
-              Digestive health
+            <Progress
+              value={summary.fat}
+              max={targetFat}
+              className="h-1 bg-[#11212D]"
+              barClassName="bg-amber-500"
+            />
+          </Card>
+
+          {/* Fibre (Violet) */}
+          <Card className="p-3.5 flex flex-col justify-between">
+            <div className="flex items-center justify-between">
+              <span className="text-xs font-medium text-[#9BA8AB]">Fibre</span>
+              <span className="h-2 w-2 rounded-full bg-violet-500" />
             </div>
-          </div>
+            <div className="my-1.5">
+              <div className="text-lg font-bold text-[#CCD0CF] tabular-nums">
+                {summary.fibre.toFixed(1)} <span className="text-xs font-normal text-[#9BA8AB]">g</span>
+              </div>
+              <span className="text-[10px] text-[#9BA8AB] block truncate">
+                Target: 30g
+              </span>
+            </div>
+            <Progress
+              value={summary.fibre}
+              max={30}
+              className="h-1 bg-[#11212D]"
+              barClassName="bg-violet-500"
+            />
+          </Card>
         </div>
       </div>
 
-      {/* Main Grid: Weekly Trend & Today's Meals */}
-      <div className="grid grid-cols-1 lg:grid-cols-12 gap-6">
+      {/* 5. Weekly intake trend & 6. Today's meal progress */}
+      <div className="grid grid-cols-1 lg:grid-cols-12 gap-4">
         {/* Weekly Trend Card (7 cols on lg) */}
-        <Card className="lg:col-span-7 flex flex-col justify-between">
-          <CardHeader>
+        <Card className="lg:col-span-7 flex flex-col">
+          <CardHeader className="pb-2">
             <div className="flex items-center justify-between">
               <div>
-                <CardTitle className="flex items-center gap-2">
-                  <TrendingUp className="h-5 w-5 text-emerald-600" />
-                  Weekly Intake Trend
-                </CardTitle>
-                <CardDescription>7-day daily calorie history</CardDescription>
+                <CardTitle className="text-sm">Weekly Intake Trend</CardTitle>
+                <CardDescription>7-day daily calorie logs</CardDescription>
               </div>
-              <Badge variant="secondary" className="font-mono text-xs">
-                Avg: {averageDailyCalories} kcal/day
-              </Badge>
+              {averageDailyCalories > 0 && (
+                <Badge variant="outline" className="text-[10px] font-mono">
+                  Logged Avg: {averageDailyCalories} kcal/day
+                </Badge>
+              )}
             </div>
           </CardHeader>
-          <CardContent className="pt-2">
+          <CardContent className="pt-2 flex-1 flex flex-col justify-center">
             <DashboardTrendChart data={weeklyTrend} />
           </CardContent>
         </Card>
 
-        {/* Today's Meals Summary (5 cols on lg) */}
+        {/* 6. Today's Meal Progress (5 cols on lg) */}
         <Card className="lg:col-span-5 flex flex-col">
-          <CardHeader>
+          <CardHeader className="pb-2">
             <div className="flex items-center justify-between">
               <div>
-                <CardTitle className="flex items-center gap-2">
-                  <Utensils className="h-5 w-5 text-emerald-600" />
-                  Today's Meals
-                </CardTitle>
-                <CardDescription>Progress across meal categories</CardDescription>
+                <CardTitle className="text-sm">Today's Meal Progress</CardTitle>
+                <CardDescription>
+                  {byMeal.filter((m) => m.count > 0).length} of {byMeal.length} categories logged
+                </CardDescription>
               </div>
               <Link
                 href="/journal"
-                className="inline-flex items-center text-xs font-semibold text-emerald-600 dark:text-emerald-400 hover:text-emerald-700 hover:underline"
+                className="text-xs font-medium text-[#9BA8AB] hover:text-[#CCD0CF] flex items-center gap-1"
               >
-                <span>View all</span>
-                <ArrowRight className="h-3 w-3 ml-1" />
+                <span>Journal</span>
+                <ArrowRight className="h-3 w-3" />
               </Link>
             </div>
           </CardHeader>
-          <CardContent className="pt-0 flex-1 flex flex-col justify-between">
-            <div className="space-y-2.5">
+
+          <CardContent className="pt-1 flex-1 flex flex-col justify-between">
+            <div className="space-y-1.5">
               {byMeal.map((meal) => {
-                const Icon = meal.icon
                 const isLogged = meal.count > 0
 
                 return (
                   <div
                     key={meal.id}
-                    className="flex items-center justify-between p-3 rounded-xl border border-slate-100 dark:border-slate-800/80 bg-slate-50/60 dark:bg-slate-950/40 hover:bg-slate-100/60 dark:hover:bg-slate-900/60 transition-colors"
+                    className="flex items-center justify-between p-2.5 rounded-xl border border-[#253745]/40 bg-[#06141B]/30 hover:bg-[#06141B]/60 transition-colors"
                   >
-                    <div className="flex items-center gap-3">
+                    <div className="flex items-center gap-2.5">
                       <div
-                        className={`h-9 w-9 rounded-xl flex items-center justify-center ${
+                        className={`h-7 w-7 rounded-lg flex items-center justify-center text-xs font-medium ${
                           isLogged
-                            ? "bg-emerald-100 text-emerald-700 dark:bg-emerald-950/80 dark:text-emerald-300"
-                            : "bg-slate-200/70 text-slate-500 dark:bg-slate-800 dark:text-slate-400"
+                            ? "bg-emerald-500/15 text-emerald-400 border border-emerald-500/30"
+                            : "bg-[#11212D] text-[#9BA8AB] border border-[#253745]/50"
                         }`}
                       >
-                        <Icon className="h-4 w-4" />
+                        {isLogged ? <CheckCircle2 className="h-3.5 w-3.5" /> : <Plus className="h-3.5 w-3.5" />}
                       </div>
                       <div>
-                        <span className="text-sm font-medium text-slate-900 dark:text-slate-100 block">
+                        <span className="text-xs font-medium text-[#CCD0CF] block">
                           {meal.label}
                         </span>
-                        <span className="text-[11px] text-slate-400">
-                          {isLogged ? `${meal.count} ${meal.count === 1 ? "item" : "items"}` : "Not logged yet"}
+                        <span className="text-[10px] text-[#9BA8AB]">
+                          {isLogged ? `${meal.count} ${meal.count === 1 ? "dish" : "dishes"}` : "Unlogged"}
                         </span>
                       </div>
                     </div>
 
                     <div className="text-right">
                       {isLogged ? (
-                        <div>
-                          <span className="text-sm font-bold text-slate-900 dark:text-white tabular-nums">
-                            {Math.round(meal.calories)}
-                          </span>
-                          <span className="text-xs text-slate-400 ml-1">kcal</span>
-                        </div>
+                        <span className="text-xs font-semibold text-[#CCD0CF] tabular-nums font-mono">
+                          {Math.round(meal.calories)} <span className="text-[10px] text-[#9BA8AB]">kcal</span>
+                        </span>
                       ) : (
                         <Link
                           href={`/journal?category=${meal.id}`}
-                          className="text-xs font-medium text-emerald-600 dark:text-emerald-400 hover:underline flex items-center gap-1"
+                          className="text-[11px] font-medium text-[#9BA8AB] hover:text-[#CCD0CF] px-2 py-0.5 rounded-md hover:bg-[#11212D] transition-colors"
                         >
-                          <Plus className="h-3 w-3" /> Add
+                          + Log
                         </Link>
                       )}
                     </div>
@@ -335,56 +362,48 @@ export default async function Home() {
                 )
               })}
             </div>
-
-            {/* Quick footer */}
-            <div className="mt-4 pt-3 border-t border-slate-100 dark:border-slate-800/80 flex items-center justify-between text-xs text-slate-500 dark:text-slate-400">
-              <span>Completed today</span>
-              <span className="font-semibold text-slate-900 dark:text-slate-200">
-                {byMeal.filter((m) => m.count > 0).length} of {byMeal.length} categories
-              </span>
-            </div>
           </CardContent>
         </Card>
       </div>
 
-      {/* Recent Meal Logs List (if any logged today) */}
+      {/* Recent Food Entries List */}
       {entries.length > 0 && (
         <Card>
-          <CardHeader>
+          <CardHeader className="pb-2">
             <div className="flex items-center justify-between">
               <div>
-                <CardTitle>Recent Food Entries</CardTitle>
-                <CardDescription>Items recorded today with portion and nutrition</CardDescription>
+                <CardTitle className="text-sm">Today's Logged Items</CardTitle>
+                <CardDescription>Recent entries recorded today</CardDescription>
               </div>
-              <Badge variant="outline" className="text-xs">
-                {entries.length} recorded
+              <Badge variant="outline" className="text-[10px]">
+                {entries.length} {entries.length === 1 ? "entry" : "entries"}
               </Badge>
             </div>
           </CardHeader>
-          <CardContent>
-            <div className="divide-y divide-slate-100 dark:divide-slate-800/80">
+          <CardContent className="pt-1">
+            <div className="divide-y divide-[#253745]/40">
               {entries.slice(0, 5).map((entry) => (
-                <div key={entry.id} className="py-3 flex items-center justify-between first:pt-0 last:pb-0">
-                  <div className="flex items-center gap-3">
-                    <div className="h-9 w-9 rounded-xl bg-emerald-50 dark:bg-emerald-950/60 border border-emerald-200/60 dark:border-emerald-800/60 flex items-center justify-center text-emerald-600 dark:text-emerald-400 shrink-0">
-                      <CheckCircle2 className="h-4 w-4" />
+                <div key={entry.id} className="py-2.5 flex items-center justify-between first:pt-0 last:pb-0">
+                  <div className="flex items-center gap-2.5 min-w-0">
+                    <div className="h-7 w-7 rounded-lg bg-[#11212D] border border-[#253745]/60 flex items-center justify-center text-emerald-400 shrink-0">
+                      <CheckCircle2 className="h-3.5 w-3.5" />
                     </div>
-                    <div>
-                      <span className="text-sm font-semibold text-slate-900 dark:text-white block">
+                    <div className="min-w-0">
+                      <span className="text-xs font-medium text-[#CCD0CF] block truncate">
                         {entry.foodName}
                       </span>
-                      <span className="text-xs text-slate-400">
+                      <span className="text-[10px] text-[#9BA8AB] block truncate">
                         {entry.estimatedPortionG ? `${entry.estimatedPortionG}g • ` : ""}
                         {entry.mealCategory.replace("_", " ")}
                       </span>
                     </div>
                   </div>
-                  <div className="text-right">
-                    <div className="text-sm font-bold text-slate-900 dark:text-white tabular-nums">
+                  <div className="text-right shrink-0 ml-3">
+                    <div className="text-xs font-semibold text-[#CCD0CF] tabular-nums font-mono">
                       {Math.round(entry.calories || 0)} kcal
                     </div>
-                    <div className="text-[11px] text-slate-400">
-                      P: {entry.proteinG?.toFixed(1) || 0}g • C: {entry.carbsG?.toFixed(1) || 0}g
+                    <div className="text-[10px] text-[#9BA8AB]">
+                      P: {entry.proteinG?.toFixed(0) || 0}g • C: {entry.carbsG?.toFixed(0) || 0}g • F: {entry.fatG?.toFixed(0) || 0}g
                     </div>
                   </div>
                 </div>

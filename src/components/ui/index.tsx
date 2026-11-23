@@ -2,17 +2,14 @@ import * as React from "react"
 import { clsx, type ClassValue } from "clsx"
 import { X } from "lucide-react"
 
-// Utility type for merging class names
 export function cn(...inputs: ClassValue[]) {
   return inputs.filter(Boolean).join(" ")
 }
 
-// --- UI Components ---
-
 export { LiquidGlassCard, LiquidGlassButton } from "./liquid-glass"
 export { SmoothPageTransition, AnimeEntrance } from "./anime-motion"
 
-// Button component adhering to Apple HIG (min 44px touch target on mobile + spring physics)
+// Premium Button component with 150-200ms transitions and tactile response
 export function Button({
   children,
   className,
@@ -24,40 +21,41 @@ export function Button({
 }: {
   children?: React.ReactNode
   className?: string
-  variant?: "default" | "secondary" | "outline" | "ghost" | "destructive" | "accent" | "glass"
+  variant?: "default" | "secondary" | "outline" | "ghost" | "destructive" | "accent" | "subtle"
   size?: "default" | "sm" | "lg" | "icon"
   disabled?: boolean
   asChild?: boolean
 } & React.ButtonHTMLAttributes<HTMLButtonElement>) {
   const variants = {
     default:
-      "bg-gradient-to-r from-[#11212D] via-[#253745] to-[#4A5C6A] hover:from-[#06141B] hover:to-[#253745] text-[#CCD0CF] hover:text-white shadow-sm shadow-[#06141B]/35 active:from-[#06141B] active:to-[#11212D]",
+      "bg-[#11212D] text-[#CCD0CF] hover:bg-[#182C3D] hover:text-white border border-[#253745]/70 active:scale-[0.98] shadow-xs",
     accent:
-      "bg-[#06141B] text-[#CCD0CF] hover:bg-[#11212D] active:bg-[#06141B] dark:bg-[#CCD0CF] dark:text-[#06141B] dark:hover:bg-white shadow-sm",
-    glass:
-      "btn-liquid-glass hover:border-[#4A5C6A]/50 hover:shadow-[#253745]/20",
+      "bg-[#253745] text-[#CCD0CF] hover:bg-[#344b5e] hover:text-white active:scale-[0.98] shadow-xs border border-[#4A5C6A]/50",
     secondary:
-      "bg-[#CCD0CF]/40 text-[#06141B] hover:bg-[#CCD0CF]/70 active:bg-[#CCD0CF] dark:bg-[#253745]/50 dark:text-[#CCD0CF] dark:hover:bg-[#253745]/80",
+      "bg-[#162837]/60 text-[#9BA8AB] hover:text-[#CCD0CF] hover:bg-[#1c3346] border border-[#253745]/40 active:scale-[0.98]",
     outline:
-      "border border-[#4A5C6A]/30 dark:border-[#9BA8AB]/30 bg-white/70 dark:bg-[#11212D]/70 text-[#06141B] dark:text-[#CCD0CF] hover:bg-[#CCD0CF]/30 dark:hover:bg-[#253745]/40 shadow-2xs hover:border-[#4A5C6A]/50 hover:shadow-sm",
+      "border border-[#253745] bg-transparent text-[#CCD0CF] hover:bg-[#11212D]/80 hover:text-white hover:border-[#4A5C6A] active:scale-[0.98]",
     ghost:
-      "text-[#4A5C6A] hover:text-[#06141B] hover:bg-[#CCD0CF]/30 dark:text-[#9BA8AB] dark:hover:text-[#CCD0CF] dark:hover:bg-[#253745]/30",
+      "text-[#9BA8AB] hover:text-[#CCD0CF] hover:bg-[#11212D]/60 active:scale-[0.98]",
+    subtle:
+      "bg-[#11212D]/40 text-[#9BA8AB] hover:text-[#CCD0CF] hover:bg-[#11212D] border border-transparent hover:border-[#253745]/40",
     destructive:
-      "bg-rose-600 text-white hover:bg-rose-700 active:bg-rose-800 shadow-sm shadow-rose-600/25",
+      "bg-rose-500/15 text-rose-300 border border-rose-500/30 hover:bg-rose-500/25 active:scale-[0.98]",
   }
 
-  // 44px minimum mobile tap targets (Apple HIG Section 3.B)
   const sizes = {
-    default: "min-h-[44px] px-4 py-2 text-sm font-semibold rounded-2xl",
-    sm: "min-h-[36px] sm:min-h-[32px] px-3.5 py-1.5 text-xs font-semibold rounded-xl",
-    lg: "min-h-[50px] px-6 text-base font-bold rounded-2xl",
-    icon: "min-h-[44px] min-w-[44px] p-0 flex items-center justify-center rounded-2xl",
+    default: "min-h-[40px] px-3.5 py-2 text-xs font-semibold rounded-xl",
+    sm: "min-h-[34px] px-3 py-1.5 text-xs font-medium rounded-lg",
+    lg: "min-h-[46px] px-5 py-2.5 text-sm font-semibold rounded-xl",
+    icon: "h-9 w-9 p-0 flex items-center justify-center rounded-xl",
   }
 
   const combinedClasses = cn(
-    "inline-flex items-center justify-center font-semibold transition-all duration-150 active:scale-[0.96] select-none focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-emerald-500/30 focus-visible:ring-offset-2 disabled:pointer-events-none disabled:opacity-50 cursor-pointer touch-manipulation",
-    variants[variant],
-    sizes[size],
+    "inline-flex items-center justify-center gap-2 transition-all duration-150 ease-out",
+    "focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#4A5C6A] focus-visible:ring-offset-1 focus-visible:ring-offset-[#06141B]",
+    "disabled:opacity-40 disabled:pointer-events-none cursor-pointer select-none",
+    variants[variant] || variants.default,
+    sizes[size] || sizes.default,
     className
   )
 
@@ -69,7 +67,6 @@ export function Button({
 
   return (
     <button
-      type="button"
       className={combinedClasses}
       disabled={disabled}
       {...props}
@@ -79,20 +76,107 @@ export function Button({
   )
 }
 
-// Input component with 44px touch height and Apple focus styling
+// Sophisticated Dark Card component
+export function Card({
+  className,
+  children,
+  hoverable,
+  ...props
+}: {
+  hoverable?: boolean
+} & React.HTMLAttributes<HTMLDivElement>) {
+  return (
+    <div
+      className={cn(
+        "rounded-2xl bg-[#0f1b24] text-[#CCD0CF] border border-[#253745]/50 shadow-xs transition-colors duration-150",
+        hoverable && "hover:border-[#4A5C6A]/60 transition-all duration-150",
+        className
+      )}
+      {...props}
+    >
+      {children}
+    </div>
+  )
+}
+
+export function CardHeader({
+  className,
+  children,
+  ...props
+}: React.HTMLAttributes<HTMLDivElement>) {
+  return (
+    <div className={cn("p-4 sm:p-5 pb-3 flex flex-col space-y-1", className)} {...props}>
+      {children}
+    </div>
+  )
+}
+
+export function CardTitle({
+  className,
+  children,
+  ...props
+}: React.HTMLAttributes<HTMLHeadingElement>) {
+  return (
+    <h3
+      className={cn("text-sm sm:text-base font-semibold tracking-tight text-[#CCD0CF]", className)}
+      {...props}
+    >
+      {children}
+    </h3>
+  )
+}
+
+export function CardDescription({
+  className,
+  children,
+  ...props
+}: React.HTMLAttributes<HTMLParagraphElement>) {
+  return (
+    <p className={cn("text-xs text-[#9BA8AB] leading-relaxed", className)} {...props}>
+      {children}
+    </p>
+  )
+}
+
+export function CardContent({
+  className,
+  children,
+  ...props
+}: React.HTMLAttributes<HTMLDivElement>) {
+  return (
+    <div className={cn("p-4 sm:p-5 pt-0", className)} {...props}>
+      {children}
+    </div>
+  )
+}
+
+export function CardFooter({
+  className,
+  children,
+  ...props
+}: React.HTMLAttributes<HTMLDivElement>) {
+  return (
+    <div className={cn("p-4 sm:p-5 pt-0 flex items-center", className)} {...props}>
+      {children}
+    </div>
+  )
+}
+
+// Refined Input component
 export function Input({
   className,
   type,
   ...props
-}: {
-  className?: string
-  type?: string
-} & React.InputHTMLAttributes<HTMLInputElement>) {
+}: React.InputHTMLAttributes<HTMLInputElement>) {
   return (
     <input
       type={type}
       className={cn(
-        "flex min-h-[44px] w-full rounded-2xl border border-slate-200/90 dark:border-slate-800/90 bg-white dark:bg-slate-900/80 px-4 py-2.5 text-sm text-slate-900 dark:text-slate-100 placeholder:text-slate-400 focus-visible:outline-none focus-visible:border-emerald-500 focus-visible:ring-3 focus-visible:ring-emerald-500/15 transition-all disabled:cursor-not-allowed disabled:opacity-50 touch-manipulation",
+        "flex h-10 w-full rounded-xl bg-[#081219] px-3.5 py-2 text-xs sm:text-sm text-[#CCD0CF]",
+        "border border-[#253745]/60 placeholder:text-[#9BA8AB]/50",
+        "transition-colors duration-150",
+        "focus-visible:outline-none focus-visible:border-[#4A5C6A] focus-visible:ring-1 focus-visible:ring-[#4A5C6A]",
+        "disabled:cursor-not-allowed disabled:opacity-50",
         className
       )}
       {...props}
@@ -104,13 +188,15 @@ export function Input({
 export function Textarea({
   className,
   ...props
-}: {
-  className?: string
-} & React.TextareaHTMLAttributes<HTMLTextAreaElement>) {
+}: React.TextareaHTMLAttributes<HTMLTextAreaElement>) {
   return (
     <textarea
       className={cn(
-        "flex min-h-[90px] w-full rounded-2xl border border-slate-200/90 dark:border-slate-800/90 bg-white dark:bg-slate-900/80 px-4 py-3 text-sm text-slate-900 dark:text-slate-100 placeholder:text-slate-400 focus-visible:outline-none focus-visible:border-emerald-500 focus-visible:ring-3 focus-visible:ring-emerald-500/15 transition-all disabled:cursor-not-allowed disabled:opacity-50 touch-manipulation",
+        "flex min-h-[80px] w-full rounded-xl bg-[#081219] px-3.5 py-2.5 text-xs sm:text-sm text-[#CCD0CF]",
+        "border border-[#253745]/60 placeholder:text-[#9BA8AB]/50",
+        "transition-colors duration-150",
+        "focus-visible:outline-none focus-visible:border-[#4A5C6A] focus-visible:ring-1 focus-visible:ring-[#4A5C6A]",
+        "disabled:cursor-not-allowed disabled:opacity-50",
         className
       )}
       {...props}
@@ -118,71 +204,92 @@ export function Textarea({
   )
 }
 
-// Badge component with soft tinted pill styles
+// Compact Badge component
 export function Badge({
-  children,
-  variant = "default",
   className,
+  variant = "default",
+  children,
+  ...props
 }: {
+  variant?: "default" | "secondary" | "outline" | "success" | "warning" | "amber" | "cyan" | "violet" | "destructive" | "info"
   children?: React.ReactNode
-  variant?: "default" | "secondary" | "outline" | "success" | "warning" | "info" | "destructive" | "ocean" | "mint"
-  className?: string
-}) {
+} & React.HTMLAttributes<HTMLDivElement>) {
   const variants = {
-    default: "bg-[#06141B] text-[#CCD0CF] dark:bg-[#CCD0CF] dark:text-[#06141B]",
-    ocean:
-      "bg-[#253745]/20 text-[#253745] border border-[#253745]/30 dark:bg-[#4A5C6A]/25 dark:text-[#CCD0CF] dark:border-[#4A5C6A]/40",
-    mint:
-      "bg-[#CCD0CF]/60 text-[#06141B] border border-[#9BA8AB]/40 dark:bg-[#9BA8AB]/20 dark:text-[#CCD0CF] dark:border-[#9BA8AB]/30",
-    secondary:
-      "bg-slate-100 text-slate-700 border border-slate-200/80 dark:bg-[#253745] dark:text-[#CCD0CF] dark:border-[#4A5C6A]/40",
-    outline:
-      "border border-[#4A5C6A]/30 dark:border-[#9BA8AB]/30 bg-transparent text-[#06141B] dark:text-[#CCD0CF]",
-    success:
-      "bg-[#CCD0CF]/70 text-[#11212D] border border-[#9BA8AB]/50 dark:bg-[#4A5C6A]/30 dark:text-[#CCD0CF] dark:border-[#9BA8AB]/40",
-    warning:
-      "bg-amber-50 text-amber-800 border border-amber-200/70 dark:bg-amber-950/60 dark:text-amber-300 dark:border-amber-800/70",
-    info:
-      "bg-[#9BA8AB]/30 text-[#11212D] border border-[#9BA8AB]/50 dark:bg-[#253745]/40 dark:text-[#CCD0CF] dark:border-[#4A5C6A]/50",
-    destructive:
-      "bg-rose-50 text-rose-700 border border-rose-200/70 dark:bg-rose-950/60 dark:text-rose-300 dark:border-rose-800/70",
+    default: "bg-[#11212D] text-[#CCD0CF] border border-[#253745]/60",
+    secondary: "bg-[#162837]/60 text-[#9BA8AB] border border-[#253745]/40",
+    outline: "border border-[#253745] text-[#9BA8AB] bg-transparent",
+    success: "bg-emerald-500/10 text-emerald-400 border border-emerald-500/25",
+    warning: "bg-amber-500/10 text-amber-400 border border-amber-500/25",
+    amber: "bg-amber-500/10 text-amber-400 border border-amber-500/25",
+    cyan: "bg-cyan-500/10 text-cyan-400 border border-cyan-500/25",
+    violet: "bg-violet-500/10 text-violet-400 border border-violet-500/25",
+    destructive: "bg-rose-500/10 text-rose-400 border border-rose-500/25",
+    info: "bg-sky-500/10 text-sky-400 border border-sky-500/25",
   }
 
   return (
-    <span
+    <div
       className={cn(
-        "inline-flex items-center gap-1 rounded-full px-2.5 py-0.5 text-xs font-semibold tracking-tight select-none",
-        variants[variant],
+        "inline-flex items-center gap-1 rounded-full px-2.5 py-0.5 text-[11px] font-medium tracking-tight select-none",
+        variants[variant] || variants.default,
         className
       )}
+      {...props}
     >
       {children}
-    </span>
+    </div>
+  )
+}
+
+// Progress Bar component
+export function Progress({
+  value = 0,
+  max = 100,
+  className,
+  barClassName,
+}: {
+  value?: number
+  max?: number
+  className?: string
+  barClassName?: string
+}) {
+  const percentage = Math.min(Math.max(0, (value / (max || 1)) * 100), 100)
+  return (
+    <div
+      className={cn("h-1.5 w-full overflow-hidden rounded-full bg-[#11212D]", className)}
+      role="progressbar"
+      aria-valuenow={value}
+      aria-valuemin={0}
+      aria-valuemax={max}
+    >
+      <div
+        className={cn("h-full transition-all duration-300 ease-out rounded-full bg-[#4A5C6A]", barClassName)}
+        style={{ width: `${percentage}%` }}
+      />
+    </div>
   )
 }
 
 // Label component
-export function Label({ children, className }: {
+export function Label({
+  children,
+  className,
+}: {
   children?: React.ReactNode
   className?: string
 }) {
   return (
-    <label className={cn("text-xs font-semibold uppercase tracking-wider text-slate-600 dark:text-slate-400 block", className)}>
+    <label className={cn("text-xs font-medium text-[#9BA8AB] block", className)}>
       {children}
     </label>
   )
 }
 
 // Separator component
-export function Separator({ className }: {
-  className?: string
-}) {
+export function Separator({ className }: { className?: string }) {
   return (
     <div
-      className={cn(
-        "relative my-4 flex h-[1px] w-full shrink-0 cursor-default bg-slate-200/80 dark:bg-slate-800/80",
-        className
-      )}
+      className={cn("relative my-3 flex h-[1px] w-full shrink-0 bg-[#253745]/40", className)}
     />
   )
 }
@@ -205,16 +312,16 @@ export function Switch({
       aria-checked={checked}
       onClick={() => onCheckedChange?.(!checked)}
       className={cn(
-        "peer inline-flex h-[26px] w-[46px] shrink-0 cursor-pointer items-center rounded-full border-2 border-transparent transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#4A5C6A] focus-visible:ring-offset-2 disabled:pointer-events-none disabled:opacity-50 touch-manipulation",
-        checked ? "bg-[#253745] dark:bg-[#4A5C6A]" : "bg-slate-200 dark:bg-slate-700",
+        "peer inline-flex h-5 w-9 shrink-0 cursor-pointer items-center rounded-full border border-transparent transition-colors focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-[#4A5C6A] disabled:pointer-events-none disabled:opacity-50",
+        checked ? "bg-[#253745]" : "bg-[#11212D]",
         className
       )}
       {...props}
     >
       <span
         className={cn(
-          "pointer-events-none block h-5 w-5 rounded-full bg-white shadow-sm ring-0 transition-transform duration-200",
-          checked ? "translate-x-[20px]" : "translate-x-[2px]"
+          "pointer-events-none block h-3.5 w-3.5 rounded-full bg-[#CCD0CF] shadow-xs transition-transform duration-150",
+          checked ? "translate-x-4" : "translate-x-0.5"
         )}
       />
     </button>
@@ -232,7 +339,7 @@ export function Avatar({
   return (
     <div
       className={cn(
-        "h-10 w-10 rounded-full flex items-center justify-center font-bold text-xs border border-slate-200 dark:border-slate-700 bg-slate-100 dark:bg-slate-800 text-slate-900 dark:text-slate-100 shadow-2xs",
+        "h-9 w-9 rounded-full flex items-center justify-center font-semibold text-xs border border-[#253745] bg-[#11212D] text-[#CCD0CF]",
         className
       )}
     >
@@ -241,90 +348,7 @@ export function Avatar({
   )
 }
 
-// Card components with Apple HIG diffuse elevation, liquid glass & rounded-2xl geometry
-export function Card({ children, className, hoverable, glass }: {
-  children?: React.ReactNode
-  className?: string
-  hoverable?: boolean
-  glass?: boolean
-}) {
-  return (
-    <div
-      className={cn(
-        glass
-          ? "liquid-glass rounded-2xl sm:rounded-3xl p-4 sm:p-6"
-          : "bg-white dark:bg-slate-900/90 border border-slate-200/80 dark:border-slate-800/80 rounded-2xl sm:rounded-3xl p-4 sm:p-6 shadow-[0_1px_2px_rgba(0,0,0,0.03),0_8px_24px_rgba(0,0,0,0.04)]",
-        hoverable && "liquid-glass-hover transition-all duration-200 hover:shadow-lg hover:border-emerald-500/30 active:scale-[0.99] cursor-pointer",
-        className
-      )}
-    >
-      {children}
-    </div>
-  )
-}
-
-export function CardHeader({ children, className }: {
-  children?: React.ReactNode
-  className?: string
-}) {
-  return (
-    <div className={cn("flex flex-col space-y-1.5 pb-4", className)}>
-      {children}
-    </div>
-  )
-}
-
-export function CardTitle({ children, className }: {
-  children?: React.ReactNode
-  className?: string
-}) {
-  return (
-    <h3
-      className={cn(
-        "text-lg sm:text-xl font-bold text-slate-900 dark:text-slate-100 tracking-tight",
-        className
-      )}
-    >
-      {children}
-    </h3>
-  )
-}
-
-export function CardDescription({ children, className }: {
-  children?: React.ReactNode
-  className?: string
-}) {
-  return (
-    <p className={cn("text-xs text-slate-500 dark:text-slate-400", className)}>
-      {children}
-    </p>
-  )
-}
-
-export function CardContent({ children, className }: {
-  children?: React.ReactNode
-  className?: string
-}) {
-  return <div className={cn("pt-0", className)}>{children}</div>
-}
-
-export function CardFooter({ children, className }: {
-  children?: React.ReactNode
-  className?: string
-}) {
-  return (
-    <div
-      className={cn(
-        "flex items-center pt-4 border-t border-slate-100 dark:border-slate-800/80 mt-4",
-        className
-      )}
-    >
-      {children}
-    </div>
-  )
-}
-
-// Skeleton component for skeleton screens & loading states
+// Skeleton loading component
 export function Skeleton({
   className,
   ...props
@@ -332,7 +356,7 @@ export function Skeleton({
   return (
     <div
       className={cn(
-        "animate-pulse rounded-2xl bg-slate-200/80 dark:bg-slate-800/80",
+        "animate-pulse rounded-xl bg-[#11212D]/80",
         className
       )}
       {...props}
@@ -340,7 +364,7 @@ export function Skeleton({
   )
 }
 
-// Phone-First Apple HIG Bottom Sheet Modal
+// BottomSheet / Modal component
 export function BottomSheet({
   isOpen,
   onClose,
@@ -356,7 +380,6 @@ export function BottomSheet({
   children: React.ReactNode
   className?: string
 }) {
-  // Lock body scroll when open
   React.useEffect(() => {
     if (isOpen) {
       document.body.style.overflow = "hidden"
@@ -371,53 +394,30 @@ export function BottomSheet({
   if (!isOpen) return null
 
   return (
-    <div className="fixed inset-0 z-50 flex items-end sm:items-center justify-center">
-      {/* Translucent Backdrop */}
+    <div className="fixed inset-0 z-50 flex items-end sm:items-center justify-center p-0 sm:p-4">
       <div
-        className="fixed inset-0 bg-black/60 backdrop-blur-md transition-opacity duration-200 animate-fadeIn"
+        className="fixed inset-0 bg-black/75 backdrop-blur-xs transition-opacity duration-150"
         onClick={onClose}
       />
-
-      {/* Slide-Up Sheet (Mobile) / Centered Modal (Desktop) */}
       <div
         className={cn(
-          "relative w-full max-h-[92vh] sm:max-h-[85vh] sm:max-w-lg bg-white dark:bg-slate-900 border-t sm:border border-slate-200/80 dark:border-slate-800/80 rounded-t-[2rem] sm:rounded-3xl shadow-2xl flex flex-col z-10 animate-sheet-slide-up overflow-hidden",
+          "relative z-50 w-full max-w-lg bg-[#0f1b24] border border-[#253745] rounded-t-[24px] sm:rounded-2xl shadow-2xl max-h-[85vh] flex flex-col overflow-hidden animate-in fade-in slide-in-from-bottom-3 duration-200",
           className
         )}
       >
-        {/* iOS Pull Pill Indicator (Mobile only) */}
-        <div className="pt-3 pb-1 flex justify-center sm:hidden cursor-grab active:cursor-grabbing">
-          <div className="h-1.5 w-12 rounded-full bg-slate-300 dark:bg-slate-700" />
-        </div>
-
-        {/* Sheet Header */}
-        <div className="flex items-center justify-between px-6 py-4 border-b border-slate-100 dark:border-slate-800/80">
+        <div className="flex items-center justify-between p-4 px-5 border-b border-[#253745]/60 shrink-0">
           <div>
-            {title && (
-              <h3 className="text-base sm:text-lg font-bold text-slate-900 dark:text-white tracking-tight">
-                {title}
-              </h3>
-            )}
-            {subtitle && (
-              <p className="text-xs text-slate-500 dark:text-slate-400 mt-0.5">
-                {subtitle}
-              </p>
-            )}
+            {title && <h3 className="text-sm font-semibold text-[#CCD0CF]">{title}</h3>}
+            {subtitle && <p className="text-xs text-[#9BA8AB] mt-0.5">{subtitle}</p>}
           </div>
           <button
-            type="button"
             onClick={onClose}
-            className="p-2 text-slate-400 hover:text-slate-600 dark:hover:text-slate-200 rounded-full hover:bg-slate-100 dark:hover:bg-slate-800 active:scale-90 transition-all min-h-[44px] min-w-[44px] flex items-center justify-center"
-            aria-label="Close sheet"
+            className="p-1.5 rounded-lg text-[#9BA8AB] hover:text-[#CCD0CF] hover:bg-[#11212D] transition-colors"
           >
-            <X className="h-5 w-5" />
+            <X className="h-4 w-4" />
           </button>
         </div>
-
-        {/* Scrollable Content Area */}
-        <div className="flex-1 overflow-y-auto p-6 safe-bottom">
-          {children}
-        </div>
+        <div className="p-5 overflow-y-auto">{children}</div>
       </div>
     </div>
   )

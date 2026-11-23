@@ -2,12 +2,10 @@
 
 import { useState, useEffect } from "react"
 import { useRouter, useSearchParams } from "next/navigation"
-import { Button } from "@/components/ui/index"
-import { Input } from "@/components/ui/index"
-import { Card, CardContent, CardHeader, CardTitle, CardFooter } from "@/components/ui/index"
-import { Badge } from "@/components/ui/index"
-import { CheckCircle2, Plus, Trash2, Save, ArrowLeft } from "lucide-react"
+import { Button, Input, Card, CardContent, CardHeader, CardTitle, CardFooter, Badge } from "@/components/ui/index"
+import { CheckCircle2, Plus, Trash2, Save, ArrowLeft, Loader2 } from "lucide-react"
 import { MEAL_CATEGORIES } from "@/lib/constants"
+import Link from "next/link"
 
 interface AnalysisItem {
   foodName: string
@@ -80,32 +78,29 @@ export default function ResultsPage() {
     setSaving(true)
     setError(null)
     try {
-      const results = await Promise.all(
-        items.map((item) =>
-          fetch("/api/food-entries", {
-            method: "POST",
-            headers: { "Content-Type": "application/json" },
-            body: JSON.stringify({
-              mealCategory,
-              foodName: item.foodName,
-              estimatedPortionG: item.estimatedPortionG || 100,
-              calories: item.calories || 0,
-              proteinG: item.proteinG || 0,
-              carbsG: item.carbsG || 0,
-              fatG: item.fatG || 0,
-              fibreG: item.fibreG || 0,
-              aiConfidence: item.confidence as any,
-              isAiGenerated: true,
-              isConfirmedByUser: true,
-              notes,
-            }),
-          })
-        )
-      )
+      const payload = items.map((item) => ({
+        mealCategory,
+        foodName: item.foodName || "Meal Item",
+        estimatedPortionG: Number(item.estimatedPortionG) || 100,
+        calories: Number(item.calories) || 0,
+        proteinG: Number(item.proteinG) || 0,
+        carbsG: Number(item.carbsG) || 0,
+        fatG: Number(item.fatG) || 0,
+        fibreG: Number(item.fibreG) || 0,
+        aiConfidence: item.confidence as any,
+        isAiGenerated: true,
+        isConfirmedByUser: true,
+        notes: notes.trim() || null,
+      }))
 
-      const failed = results.filter((r) => !r.ok)
-      if (failed.length > 0) {
-        throw new Error("Failed to save some items")
+      const res = await fetch("/api/food-entries", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify(payload),
+      })
+
+      if (!res.ok) {
+        throw new Error("Failed to save meal items")
       }
 
       setSaved(true)
@@ -126,237 +121,223 @@ export default function ResultsPage() {
 
   if (saved) {
     return (
-      <div className="flex flex-1 flex-col items-center justify-center bg-[#f8fafc] dark:bg-[#0f172a] text-center p-8">
-        <div className="h-16 w-16 rounded-full bg-[#166534]/10 flex items-center justify-center mb-4">
-          <CheckCircle2 className="h-8 w-8 text-[#166534]" />
+      <div className="flex flex-1 flex-col items-center justify-center p-8 text-center max-w-md mx-auto space-y-4">
+        <div className="h-14 w-14 rounded-full bg-emerald-500/15 text-emerald-400 border border-emerald-500/30 flex items-center justify-center">
+          <CheckCircle2 className="h-7 w-7" />
         </div>
-        <h2 className="text-2xl font-bold text-[#0f172a] dark:text-[#f8fafc] mb-2">
-          Meal added to journal
+        <h2 className="text-xl font-bold text-[#CCD0CF]">
+          Meal Added to Journal
         </h2>
-        <p className="text-[#64748b] dark:text-[#94a3b8] mb-6">
-          Your confirmed meal has been saved to today's food journal.
+        <p className="text-xs text-[#9BA8AB] leading-relaxed">
+          Your meal items and nutritional breakdown have been saved to your food journal.
         </p>
-        <Button onClick={() => router.push("/journal")}>
-          View journal
-        </Button>
-        <Button
-          variant="outline"
-          onClick={() => router.push("/scanner")}
-          className="mt-3"
-        >
-          Scan another
-        </Button>
+        <div className="flex items-center gap-2.5 pt-2">
+          <Button variant="accent" onClick={() => router.push("/journal")}>
+            View Food Journal
+          </Button>
+          <Button variant="outline" onClick={() => router.push("/scanner")}>
+            Scan Another
+          </Button>
+        </div>
       </div>
     )
   }
 
   return (
-    <div className="flex flex-1 overflow-hidden bg-[#f8fafc] dark:bg-[#0f172a]">
-      <div className="flex-1 overflow-y-auto p-6 lg:p-8">
-        <div className="flex items-center gap-2 mb-6">
-          <button
-            onClick={() => router.push("/scanner")}
-            className="flex items-center gap-2 text-[#0f172a] dark:text-[#f8fafc] hover:text-[#38bdf8]"
-          >
-            <ArrowLeft className="h-4 w-4" /> Back
-          </button>
-          <h1 className="text-2xl font-bold text-[#0f172a] dark:text-[#f8fafc] ml-auto">
-            Confirm your meal
-          </h1>
+    <div className="flex-1 overflow-y-auto p-4 sm:p-6 lg:p-8 max-w-4xl mx-auto space-y-5 w-full">
+      <div className="flex items-center justify-between pb-2 border-b border-[#253745]/40">
+        <button
+          onClick={() => router.push("/scanner")}
+          className="flex items-center gap-1.5 text-xs text-[#9BA8AB] hover:text-[#CCD0CF] transition-colors"
+        >
+          <ArrowLeft className="h-4 w-4" /> Back to Scanner
+        </button>
+        <h1 className="text-base sm:text-lg font-bold text-[#CCD0CF]">
+          Confirm Meal Details
+        </h1>
+      </div>
+
+      <Card className="p-4 sm:p-5 bg-[#0f1b24] border border-[#253745]/60 space-y-4">
+        <div>
+          <h3 className="text-sm font-semibold text-[#CCD0CF]">
+            Review & Adjust Before Saving
+          </h3>
+          <p className="text-xs text-[#9BA8AB] mt-0.5">
+            Adjust portion sizes or food names. Nothing is committed to your log until you confirm.
+          </p>
         </div>
 
-        <Card>
-          <CardHeader>
-            <CardTitle>Review & edit before saving</CardTitle>
-          </CardHeader>
-          <CardContent>
-            <p className="text-sm text-[#64748b] dark:text-[#94a3b8] mb-4">
-              Adjust portions or correct food names. Nothing is saved until you confirm.
-            </p>
-
-            <div className="space-y-3">
-              {items.map((item, idx) => (
-                <div
-                  key={idx}
-                  className="rounded-xl border border-[#e2e8f0] dark:border-[#334155] bg-white dark:bg-[#0f172a] p-4"
-                >
-                  <div className="flex justify-between items-start mb-3">
-                    <div className="flex items-center gap-2">
-                      <Input
-                        value={item.foodName}
-                        onChange={(e) => updateItem(idx, "foodName", e.target.value)}
-                        className="w-40 text-sm border-0 bg-transparent focus:ring-0"
-                      />
-                      <Badge
-                        variant={
-                          item.confidence === "high"
-                            ? "success"
-                            : item.confidence === "medium"
-                              ? "warning"
-                              : "default"
-                        }
-                      >
-                        {item.confidence}
-                      </Badge>
-                    </div>
-                    <button
-                      onClick={() => setItems((prev) => prev.filter((_, i) => i !== idx))}
-                      className="text-[#64748b] hover:text-[#ef4444]"
-                    >
-                      <Trash2 className="h-4 w-4" />
-                    </button>
-                  </div>
-                  <div className="grid grid-cols-2 md:grid-cols-5 gap-3">
-                    <div className="flex items-center gap-2">
-                      <span className="text-xs text-[#64748b] dark:text-[#94a3b8]">Portion (g)</span>
-                      <Input
-                        type="number"
-                        value={item.estimatedPortionG || ""}
-                        onChange={(e) =>
-                          updateItem(idx, "estimatedPortionG", parseFloat(e.target.value) || 0)
-                        }
-                        className="w-20 text-sm border-0 bg-transparent focus:ring-0"
-                      />
-                    </div>
-                    <div className="flex items-center gap-2">
-                      <span className="text-xs text-[#64748b] dark:text-[#94a3b8]">Calories</span>
-                      <Input
-                        type="number"
-                        value={item.calories || ""}
-                        onChange={(e) =>
-                          updateItem(idx, "calories", parseFloat(e.target.value) || 0)
-                        }
-                        className="w-20 text-sm border-0 bg-transparent focus:ring-0"
-                      />
-                    </div>
-                    <div className="flex items-center gap-2">
-                      <span className="text-xs text-[#64748b] dark:text-[#94a3b8]">Protein</span>
-                      <Input
-                        type="number"
-                        value={item.proteinG || ""}
-                        onChange={(e) =>
-                          updateItem(idx, "proteinG", parseFloat(e.target.value) || 0)
-                        }
-                        className="w-20 text-sm border-0 bg-transparent focus:ring-0"
-                      />
-                    </div>
-                    <div className="flex items-center gap-2">
-                      <span className="text-xs text-[#64748b] dark:text-[#94a3b8]">Carbs</span>
-                      <Input
-                        type="number"
-                        value={item.carbsG || ""}
-                        onChange={(e) =>
-                          updateItem(idx, "carbsG", parseFloat(e.target.value) || 0)
-                        }
-                        className="w-20 text-sm border-0 bg-transparent focus:ring-0"
-                      />
-                    </div>
-                    <div className="flex items-center gap-2">
-                      <span className="text-xs text-[#64748b] dark:text-[#94a3b8]">Fat</span>
-                      <Input
-                        type="number"
-                        value={item.fatG || ""}
-                        onChange={(e) =>
-                          updateItem(idx, "fatG", parseFloat(e.target.value) || 0)
-                        }
-                        className="w-20 text-sm border-0 bg-transparent focus:ring-0"
-                      />
-                    </div>
-                  </div>
-                  {item.notes && (
-                    <p className="mt-2 text-xs text-[#64748b] dark:text-[#94a3b8] italic">
-                      {item.notes}
-                    </p>
+        <div className="space-y-3">
+          {items.map((item, idx) => (
+            <div
+              key={idx}
+              className="rounded-xl border border-[#253745]/50 bg-[#06141B]/50 p-3 sm:p-4 space-y-3"
+            >
+              <div className="flex items-center justify-between gap-2">
+                <div className="flex items-center gap-2 flex-1">
+                  <Input
+                    value={item.foodName}
+                    onChange={(e) => updateItem(idx, "foodName", e.target.value)}
+                    className="font-medium text-xs sm:text-sm text-[#CCD0CF]"
+                    placeholder="Food item name"
+                  />
+                  {item.confidence && (
+                    <Badge variant="outline" className="text-[10px]">
+                      {item.confidence}
+                    </Badge>
                   )}
                 </div>
-              ))}
-
-              <button
-                onClick={() => setItems((prev) => [...prev, { foodName: "" }])}
-                className="flex items-center gap-2 text-[#0f172a] dark:text-[#f8fafc] text-sm font-medium hover:text-[#38bdf8]"
-              >
-                <Plus className="h-4 w-4" /> Add another item
-              </button>
-            </div>
-
-            <div className="mt-6 pt-6 border-t border-[#e2e8f0] dark:border-[#334155]">
-              <div className="flex items-center justify-between mb-3">
-                <span className="text-sm font-medium text-[#64748b] dark:text-[#94a3b8]">Meal category</span>
-                <select
-                  value={mealCategory}
-                  onChange={(e) => setMealCategory(e.target.value)}
-                  className="rounded-lg border border-[#e2e8f0] dark:border-[#334155] bg-white dark:bg-[#0f172a] px-3 py-1.5 text-sm text-[#0f172a] dark:text-[#f8fafc] focus:ring-2 focus:ring-[#0f172a]"
+                <button
+                  onClick={() => setItems((prev) => prev.filter((_, i) => i !== idx))}
+                  className="p-1.5 text-[#9BA8AB] hover:text-rose-400 transition-colors"
+                  title="Remove item"
                 >
-                  {MEAL_CATEGORIES.map((m) => (
-                    <option key={m.id} value={m.id}>
-                      {m.label}
-                    </option>
-                  ))}
-                </select>
+                  <Trash2 className="h-4 w-4" />
+                </button>
               </div>
-              <div>
-                <label className="block text-sm font-medium text-[#0f172a] dark:text-[#f8fafc] mb-2">Notes (optional)</label>
-                <textarea
-                  value={notes}
-                  onChange={(e) => setNotes(e.target.value)}
-                  rows={2}
-                  className="w-full rounded-lg border border-[#e2e8f0] dark:border-[#334155] bg-white dark:bg-[#0f172a] px-3 py-1.5 text-sm text-[#0f172a] dark:text-[#f8fafc] focus:ring-2 focus:ring-[#0f172a]"
-                />
+
+              <div className="grid grid-cols-2 sm:grid-cols-5 gap-2 text-xs">
+                <div>
+                  <span className="text-[10px] text-[#9BA8AB] block mb-1">Portion (g)</span>
+                  <Input
+                    type="number"
+                    value={item.estimatedPortionG || ""}
+                    onChange={(e) => updateItem(idx, "estimatedPortionG", parseFloat(e.target.value) || 0)}
+                    className="h-8 text-xs font-mono"
+                  />
+                </div>
+                <div>
+                  <span className="text-[10px] text-amber-400 block mb-1">Calories (kcal)</span>
+                  <Input
+                    type="number"
+                    value={item.calories || ""}
+                    onChange={(e) => updateItem(idx, "calories", parseFloat(e.target.value) || 0)}
+                    className="h-8 text-xs font-mono"
+                  />
+                </div>
+                <div>
+                  <span className="text-[10px] text-emerald-400 block mb-1">Protein (g)</span>
+                  <Input
+                    type="number"
+                    step="0.1"
+                    value={item.proteinG || ""}
+                    onChange={(e) => updateItem(idx, "proteinG", parseFloat(e.target.value) || 0)}
+                    className="h-8 text-xs font-mono"
+                  />
+                </div>
+                <div>
+                  <span className="text-[10px] text-cyan-400 block mb-1">Carbs (g)</span>
+                  <Input
+                    type="number"
+                    step="0.1"
+                    value={item.carbsG || ""}
+                    onChange={(e) => updateItem(idx, "carbsG", parseFloat(e.target.value) || 0)}
+                    className="h-8 text-xs font-mono"
+                  />
+                </div>
+                <div>
+                  <span className="text-[10px] text-amber-400 block mb-1">Fat (g)</span>
+                  <Input
+                    type="number"
+                    step="0.1"
+                    value={item.fatG || ""}
+                    onChange={(e) => updateItem(idx, "fatG", parseFloat(e.target.value) || 0)}
+                    className="h-8 text-xs font-mono"
+                  />
+                </div>
               </div>
             </div>
-          </CardContent>
-          <CardContent>
-            <div className="rounded-xl border border-[#e2e8f0] dark:border-[#334155] bg-[#f1f5f9] dark:bg-[#1e293b] p-4">
-              <h4 className="font-semibold text-[#0f172a] dark:text-[#f8fafc] mb-2">Estimated totals</h4>
-              <div className="grid grid-cols-2 md:grid-cols-5 gap-4 text-center">
-                <div>
-                  <div className="text-xs text-[#64748b] dark:text-[#94a3b8]">Calories</div>
-                  <div className="font-bold">{Math.round(totals.calories)} kcal</div>
-                </div>
-                <div>
-                  <div className="text-xs text-[#64748b] dark:text-[#94a3b8]">Protein</div>
-                  <div className="font-bold">{totals.protein.toFixed(1)} g</div>
-                </div>
-                <div>
-                  <div className="text-xs text-[#64748b] dark:text-[#94a3b8]">Carbs</div>
-                  <div className="font-bold">{totals.carbs.toFixed(1)} g</div>
-                </div>
-                <div>
-                  <div className="text-xs text-[#64748b] dark:text-[#94a3b8]">Fat</div>
-                  <div className="font-bold">{totals.fat.toFixed(1)} g</div>
-                </div>
-                <div>
-                  <div className="text-xs text-[#64748b] dark:text-[#94a3b8]">Fibre</div>
-                  <div className="font-bold">{totals.fibre.toFixed(1)} g</div>
-                </div>
-              </div>
-            </div>
-          </CardContent>
-          <CardFooter>
-            <Button
-              onClick={handleSave}
-              disabled={saving || items.length === 0}
-              className="w-full"
+          ))}
+
+          <Button
+            variant="ghost"
+            size="sm"
+            onClick={() => setItems((prev) => [...prev, { foodName: "Added Item", estimatedPortionG: 100, calories: 150, proteinG: 5, carbsG: 20, fatG: 5 }])}
+            className="text-xs"
+          >
+            <Plus className="h-3.5 w-3.5 mr-1" /> Add Dish Item
+          </Button>
+        </div>
+
+        {/* Meal Category & Notes */}
+        <div className="pt-3 border-t border-[#253745]/40 grid grid-cols-1 sm:grid-cols-2 gap-3">
+          <div>
+            <label className="text-xs font-medium text-[#9BA8AB] block mb-1">Meal Category</label>
+            <select
+              value={mealCategory}
+              onChange={(e) => setMealCategory(e.target.value)}
+              className="w-full h-10 rounded-xl bg-[#081219] px-3 text-xs text-[#CCD0CF] border border-[#253745]/60 focus:outline-none"
             >
-              {saving ? (
-                <>
-                  <Save className="h-4 w-4 animate-spin mr-2" /> Saving…
-                </>
-              ) : (
-                <>
-                  <Save className="h-4 w-4 mr-2" /> Confirm & Add to Journal
-                </>
-              )}
-            </Button>
-          </CardFooter>
-        </Card>
+              {MEAL_CATEGORIES.map((m) => (
+                <option key={m.id} value={m.id}>
+                  {m.label}
+                </option>
+              ))}
+            </select>
+          </div>
+          <div>
+            <label className="text-xs font-medium text-[#9BA8AB] block mb-1">Notes (optional)</label>
+            <Input
+              value={notes}
+              onChange={(e) => setNotes(e.target.value)}
+              placeholder="e.g. Home cooked, lightly salted"
+              className="h-10 text-xs"
+            />
+          </div>
+        </div>
+
+        {/* Nutrition Roll-Up Card */}
+        <div className="p-3.5 rounded-xl bg-[#09131a] border border-[#253745]/60">
+          <div className="grid grid-cols-5 gap-2 text-center text-xs">
+            <div>
+              <span className="text-[10px] text-amber-400 block">Calories</span>
+              <span className="font-bold text-[#CCD0CF] font-mono">{Math.round(totals.calories)} kcal</span>
+            </div>
+            <div>
+              <span className="text-[10px] text-emerald-400 block">Protein</span>
+              <span className="font-bold text-[#CCD0CF] font-mono">{totals.protein.toFixed(1)}g</span>
+            </div>
+            <div>
+              <span className="text-[10px] text-cyan-400 block">Carbs</span>
+              <span className="font-bold text-[#CCD0CF] font-mono">{totals.carbs.toFixed(1)}g</span>
+            </div>
+            <div>
+              <span className="text-[10px] text-amber-400 block">Fat</span>
+              <span className="font-bold text-[#CCD0CF] font-mono">{totals.fat.toFixed(1)}g</span>
+            </div>
+            <div>
+              <span className="text-[10px] text-violet-400 block">Fibre</span>
+              <span className="font-bold text-[#CCD0CF] font-mono">{totals.fibre.toFixed(1)}g</span>
+            </div>
+          </div>
+        </div>
+
+        <div className="pt-2">
+          <Button
+            variant="accent"
+            size="lg"
+            onClick={handleSave}
+            disabled={saving || items.length === 0}
+            className="w-full"
+          >
+            {saving ? (
+              <>
+                <Loader2 className="h-4 w-4 animate-spin mr-2" /> Saving Meal...
+              </>
+            ) : (
+              <>
+                <Save className="h-4 w-4 mr-2" /> Confirm & Add to Food Journal
+              </>
+            )}
+          </Button>
+        </div>
 
         {error && (
-          <div className="mt-4 p-3 rounded-lg bg-[#ef4444]/10 border border-[#ef4444]/30 text-[#fca5a5] text-sm">
+          <div className="p-3 rounded-xl bg-rose-500/10 border border-rose-500/25 text-rose-300 text-xs">
             {error}
           </div>
         )}
-      </div>
+      </Card>
     </div>
   )
 }

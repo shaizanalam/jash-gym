@@ -1,11 +1,8 @@
 "use client"
 
 import * as React from "react"
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/index"
-import { Button } from "@/components/ui/index"
-import { Input } from "@/components/ui/index"
-import { Textarea } from "@/components/ui/index"
-import { User, ShieldCheck, CheckCircle2 } from "lucide-react"
+import { Card, CardContent, CardHeader, CardTitle, Button, Input, Textarea, Badge } from "@/components/ui/index"
+import { User, ShieldCheck, CheckCircle2, Loader2 } from "lucide-react"
 
 function formatJsonArray(val: any): string {
   if (!val) return ""
@@ -21,6 +18,8 @@ export default function ProfilePage() {
   const [profile, setProfile] = React.useState<any>(null)
   const [guidance, setGuidance] = React.useState<any>(null)
   const [loading, setLoading] = React.useState(true)
+  const [savingProfile, setSavingProfile] = React.useState(false)
+  const [savingGuidance, setSavingGuidance] = React.useState(false)
   const [savedMessage, setSavedMessage] = React.useState<string | null>(null)
 
   React.useEffect(() => {
@@ -44,6 +43,7 @@ export default function ProfilePage() {
 
   async function saveProfile(e: React.FormEvent<HTMLFormElement>) {
     e.preventDefault()
+    setSavingProfile(true)
     const form = e.currentTarget
     const formData = new FormData(form)
     const age = formData.get("age") as string
@@ -72,17 +72,20 @@ export default function ProfilePage() {
         }),
       })
       if (res.ok) {
-        setSavedMessage("Profile details saved successfully!")
+        setSavedMessage("Profile details updated successfully")
         setTimeout(() => setSavedMessage(null), 3000)
         loadData()
       }
     } catch (err) {
       console.error(err)
+    } finally {
+      setSavingProfile(false)
     }
   }
 
   async function saveGuidance(e: React.FormEvent<HTMLFormElement>) {
     e.preventDefault()
+    setSavingGuidance(true)
     const form = e.currentTarget
     const formData = new FormData(form)
     const dailyCalorieRef = formData.get("dailyCalorieRef") as string
@@ -101,180 +104,182 @@ export default function ProfilePage() {
         }),
       })
       if (res.ok) {
-        setSavedMessage("Professional guidance saved successfully!")
+        setSavedMessage("Professional guidance targets updated")
         setTimeout(() => setSavedMessage(null), 3000)
         loadData()
       }
     } catch (err) {
       console.error(err)
+    } finally {
+      setSavingGuidance(false)
     }
   }
 
   if (loading) {
     return (
       <div className="flex flex-1 items-center justify-center p-12">
-        <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-emerald-600"></div>
+        <Loader2 className="h-6 w-6 animate-spin text-[#9BA8AB]" />
       </div>
     )
   }
 
   return (
-    <div className="flex flex-1 overflow-hidden">
-      <div className="flex-1 overflow-y-auto p-4 sm:p-6 lg:p-8 max-w-2xl mx-auto space-y-6">
-        <div>
-          <h1 className="text-2xl font-bold text-slate-900 dark:text-slate-100">
-            Nutrition Profile
-          </h1>
-          <p className="text-sm text-slate-500 dark:text-slate-400 mt-1">
-            Personalize your nutrition preferences and dietary notes.
-          </p>
+    <div className="flex-1 overflow-y-auto p-4 sm:p-6 lg:p-8 max-w-2xl mx-auto space-y-6 w-full">
+      <div className="pb-1 border-b border-[#253745]/40">
+        <h1 className="text-xl sm:text-2xl font-bold text-[#CCD0CF] tracking-tight">
+          Nutrition Profile
+        </h1>
+        <p className="text-xs text-[#9BA8AB] mt-0.5">
+          Dietary habits, allergies, and professional targets.
+        </p>
+      </div>
+
+      {savedMessage && (
+        <div className="flex items-center gap-2 p-3 text-xs bg-emerald-500/10 text-emerald-400 rounded-xl border border-emerald-500/25">
+          <CheckCircle2 className="h-4 w-4 shrink-0" />
+          <span>{savedMessage}</span>
+        </div>
+      )}
+
+      {/* Personal Details Card */}
+      <Card className="p-4 sm:p-5 bg-[#0f1b24] border border-[#253745]/60">
+        <div className="flex items-center gap-2 pb-3 border-b border-[#253745]/40">
+          <User className="h-4 w-4 text-[#9BA8AB]" />
+          <h3 className="text-sm font-semibold text-[#CCD0CF]">Personal Preferences</h3>
         </div>
 
-        {savedMessage && (
-          <div className="flex items-center gap-2 p-3 text-sm bg-emerald-50 dark:bg-emerald-950/40 text-emerald-800 dark:text-emerald-300 rounded-lg border border-emerald-200 dark:border-emerald-800">
-            <CheckCircle2 className="h-4 w-4 shrink-0" />
-            <span>{savedMessage}</span>
-          </div>
-        )}
-
-        <Card>
-          <CardHeader>
-            <CardTitle className="flex items-center gap-2">
-              <User className="h-5 w-5 text-emerald-600" /> Personal details
-            </CardTitle>
-          </CardHeader>
-          <CardContent>
-            <form onSubmit={saveProfile} className="space-y-4">
-              <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-                <div className="flex flex-col gap-1.5">
-                  <label className="text-sm font-medium text-slate-700 dark:text-slate-300">
-                    Age
-                  </label>
-                  <Input type="number" name="age" defaultValue={profile?.age || ""} placeholder="e.g. 19" />
-                </div>
-                <div className="flex flex-col gap-1.5">
-                  <label className="text-sm font-medium text-slate-700 dark:text-slate-300">
-                    Dietary preference
-                  </label>
-                  <select
-                    name="dietaryPreference"
-                    defaultValue={profile?.dietaryPreference || "vegetarian"}
-                    className="rounded-lg border border-slate-300 dark:border-slate-700 bg-white dark:bg-slate-900 px-3 py-2 text-sm text-slate-900 dark:text-slate-100 focus:outline-none focus:ring-2 focus:ring-emerald-500"
-                  >
-                    <option value="vegetarian">Vegetarian</option>
-                    <option value="non_vegetarian">Non-Vegetarian</option>
-                    <option value="vegan">Vegan</option>
-                    <option value="eggetarian">Eggetarian</option>
-                    <option value="jain">Jain</option>
-                  </select>
-                </div>
-              </div>
-
-              <div className="flex flex-col gap-1.5">
-                <label className="text-sm font-medium text-slate-700 dark:text-slate-300">
-                  Food allergies (comma-separated)
-                </label>
-                <Input
-                  name="allergies"
-                  defaultValue={formatJsonArray(profile?.allergies)}
-                  placeholder="e.g. peanuts, dairy, gluten"
-                />
-              </div>
-
-              <div className="flex flex-col gap-1.5">
-                <label className="text-sm font-medium text-slate-700 dark:text-slate-300">
-                  Dietary preferences or restrictions (comma-separated)
-                </label>
-                <Input
-                  name="restrictions"
-                  defaultValue={formatJsonArray(profile?.restrictions)}
-                  placeholder="e.g. no refined sugar, low sodium"
-                />
-              </div>
-
-              <div className="flex flex-col gap-1.5">
-                <label className="text-sm font-medium text-slate-700 dark:text-slate-300">
-                  Lifestyle activity level
-                </label>
-                <select
-                  name="activityLevel"
-                  defaultValue={profile?.activityLevel || "moderately_active"}
-                  className="rounded-lg border border-slate-300 dark:border-slate-700 bg-white dark:bg-slate-900 px-3 py-2 text-sm text-slate-900 dark:text-slate-100 focus:outline-none focus:ring-2 focus:ring-emerald-500"
-                >
-                  <option value="sedentary">Sedentary (mostly sitting)</option>
-                  <option value="lightly_active">Lightly active (light walking/exercise 1-3 days)</option>
-                  <option value="moderately_active">Moderately active (sports/exercise 3-5 days)</option>
-                  <option value="very_active">Very active (heavy physical training)</option>
-                </select>
-              </div>
-
-              <Button type="submit" className="w-full bg-emerald-600 hover:bg-emerald-700 text-white">
-                Save Personal Details
-              </Button>
-            </form>
-          </CardContent>
-        </Card>
-
-        <Card className="border-amber-200 dark:border-amber-900/60 bg-amber-50/40 dark:bg-amber-950/20">
-          <CardHeader>
-            <CardTitle className="flex items-center gap-2 text-amber-900 dark:text-amber-200">
-              <ShieldCheck className="h-5 w-5 text-amber-600 dark:text-amber-400" /> Professional Guidance (Optional)
-            </CardTitle>
-          </CardHeader>
-          <CardContent className="space-y-4">
-            <p className="text-sm text-slate-600 dark:text-slate-400">
-              If a qualified doctor or registered dietitian has provided you with nutrition targets, you can record them here as an informational reference.
-            </p>
-            <div className="bg-white dark:bg-slate-900 border border-amber-200 dark:border-amber-900/40 rounded-lg p-3 text-xs text-slate-600 dark:text-slate-400">
-              <strong className="text-slate-900 dark:text-slate-100 block mb-1">
-                Teen & Growth Development Safety:
-              </strong>
-              Nutritional needs for teenagers vary significantly based on developmental stage and daily activity. DietScan does not automatically prescribe restrictive targets.
+        <form onSubmit={saveProfile} className="space-y-4 pt-3">
+          <div className="grid grid-cols-1 sm:grid-cols-2 gap-3.5">
+            <div>
+              <label className="text-xs font-medium text-[#9BA8AB] block mb-1">
+                Age
+              </label>
+              <Input
+                type="number"
+                name="age"
+                defaultValue={profile?.age || ""}
+                placeholder="e.g. 24"
+              />
             </div>
+            <div>
+              <label className="text-xs font-medium text-[#9BA8AB] block mb-1">
+                Dietary Preference
+              </label>
+              <select
+                name="dietaryPreference"
+                defaultValue={profile?.dietaryPreference || "vegetarian"}
+                className="w-full h-10 rounded-xl bg-[#081219] px-3 text-xs text-[#CCD0CF] border border-[#253745]/60 focus:outline-none"
+              >
+                <option value="vegetarian">Vegetarian</option>
+                <option value="non_vegetarian">Non-Vegetarian</option>
+                <option value="vegan">Vegan</option>
+                <option value="eggetarian">Eggetarian</option>
+                <option value="jain">Jain</option>
+              </select>
+            </div>
+          </div>
 
-            <form onSubmit={saveGuidance} className="space-y-3">
-              <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-                <div className="flex flex-col gap-1.5">
-                  <label className="text-sm font-medium text-slate-700 dark:text-slate-300">
-                    Daily Calorie Reference (kcal)
-                  </label>
-                  <Input
-                    type="number"
-                    name="dailyCalorieRef"
-                    defaultValue={guidance?.dailyCalorieRef || ""}
-                    placeholder="e.g. 2200"
-                  />
-                </div>
-                <div className="flex flex-col gap-1.5">
-                  <label className="text-sm font-medium text-slate-700 dark:text-slate-300">
-                    Daily Protein Reference (g)
-                  </label>
-                  <Input
-                    type="number"
-                    name="dailyProteinRef"
-                    defaultValue={guidance?.dailyProteinRef || ""}
-                    placeholder="e.g. 65"
-                  />
-                </div>
-              </div>
-              <div className="flex flex-col gap-1.5">
-                <label className="text-sm font-medium text-slate-700 dark:text-slate-300">
-                  Doctor / Dietitian consultation notes
-                </label>
-                <Textarea
-                  name="sourceNotes"
-                  defaultValue={guidance?.sourceNotes || ""}
-                  rows={2}
-                  placeholder="e.g. Recommended by Dr. Mehta for active growth"
-                />
-              </div>
-              <Button type="submit" variant="outline" className="w-full">
-                Save Professional Reference
-              </Button>
-            </form>
-          </CardContent>
-        </Card>
-      </div>
+          <div>
+            <label className="text-xs font-medium text-[#9BA8AB] block mb-1">
+              Food Allergies (comma-separated)
+            </label>
+            <Input
+              name="allergies"
+              defaultValue={formatJsonArray(profile?.allergies)}
+              placeholder="e.g. peanuts, dairy, gluten"
+            />
+          </div>
+
+          <div>
+            <label className="text-xs font-medium text-[#9BA8AB] block mb-1">
+              Dietary Restrictions (comma-separated)
+            </label>
+            <Input
+              name="restrictions"
+              defaultValue={formatJsonArray(profile?.restrictions)}
+              placeholder="e.g. low sodium, no refined sugar"
+            />
+          </div>
+
+          <div>
+            <label className="text-xs font-medium text-[#9BA8AB] block mb-1">
+              Lifestyle Activity Level
+            </label>
+            <select
+              name="activityLevel"
+              defaultValue={profile?.activityLevel || "moderately_active"}
+              className="w-full h-10 rounded-xl bg-[#081219] px-3 text-xs text-[#CCD0CF] border border-[#253745]/60 focus:outline-none"
+            >
+              <option value="sedentary">Sedentary (desk work, minimal activity)</option>
+              <option value="lightly_active">Lightly Active (light walking 1-3 days/week)</option>
+              <option value="moderately_active">Moderately Active (exercise 3-5 days/week)</option>
+              <option value="very_active">Very Active (intense training or physical labor)</option>
+            </select>
+          </div>
+
+          <div className="pt-2">
+            <Button type="submit" variant="accent" size="default" disabled={savingProfile} className="w-full">
+              {savingProfile ? "Saving..." : "Save Preferences"}
+            </Button>
+          </div>
+        </form>
+      </Card>
+
+      {/* Professional Guidance Card */}
+      <Card className="p-4 sm:p-5 bg-[#0f1b24] border border-[#253745]/60">
+        <div className="flex items-center gap-2 pb-3 border-b border-[#253745]/40">
+          <ShieldCheck className="h-4 w-4 text-[#9BA8AB]" />
+          <h3 className="text-sm font-semibold text-[#CCD0CF]">Clinical / Professional Guidance</h3>
+        </div>
+
+        <form onSubmit={saveGuidance} className="space-y-4 pt-3">
+          <p className="text-xs text-[#9BA8AB] leading-relaxed">
+            Record doctor or dietitian nutritional reference guidelines. NutriMentor does not prescribe restrictive crash diets automatically.
+          </p>
+
+          <div className="grid grid-cols-1 sm:grid-cols-2 gap-3.5">
+            <div>
+              <label className="text-xs font-medium text-[#9BA8AB] block mb-1">
+                Daily Calorie Target (kcal)
+              </label>
+              <Input
+                type="number"
+                name="dailyCalorieRef"
+                defaultValue={guidance?.dailyCalorieRef || ""}
+                placeholder="e.g. 2100"
+              />
+            </div>
+            <div>
+              <label className="text-xs font-medium text-[#9BA8AB] block mb-1">
+                Daily Protein Target (g)
+              </label>
+              <Input
+                type="number"
+                name="dailyProteinRef"
+                defaultValue={guidance?.dailyProteinRef || ""}
+                placeholder="e.g. 110"
+              />
+            </div>
+          </div>
+
+          <div>
+            <label className="text-xs font-medium text-[#9BA8AB] block mb-1">
+              Consultation Notes
+            </label>
+            <Textarea
+              name="sourceNotes"
+              defaultValue={guidance?.sourceNotes || ""}
+              placeholder="e.g. Advised by Dr. Sharma for lean hypertrophy"
+            />
+          </div>
+
+          <div className="pt-2">
+            <Button type="submit" variant="outline" size="default" disabled={savingGuidance} className="w-full">
+              {savingGuidance ? "Saving..." : "Save Clinical Reference"}
+            </Button>
+          </div>
+        </form>
+      </Card>
     </div>
   )
 }

@@ -47,7 +47,7 @@ export default function RootLayout({
         <meta name="mobile-web-app-capable" content="yes" />
         <meta name="apple-touch-fullscreen" content="yes" />
       </head>
-      <body className="min-h-full bg-[#f7f9fa] dark:bg-[#06141B] text-[#06141B] dark:text-[#CCD0CF] antialiased">
+      <body className="min-h-full bg-[#06141B] text-[#CCD0CF] antialiased">
         <Providers>{children}</Providers>
       </body>
     </html>
