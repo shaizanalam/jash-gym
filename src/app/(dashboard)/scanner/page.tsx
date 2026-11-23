@@ -310,8 +310,8 @@ export default function Scanner() {
         >
           <ArrowLeft className="h-4 w-4" /> Scan Another Meal
         </button>
-        <Badge variant="success" className="text-xs font-mono">
-          <Sparkles className="h-3 w-3 mr-1" /> AI Detection Completed
+        <Badge variant="outline" className="text-xs font-mono">
+          Detection Complete
         </Badge>
       </div>
 
@@ -330,8 +330,8 @@ export default function Scanner() {
             <Card className="h-full flex flex-col justify-between border-slate-200/80 dark:border-slate-800/80">
               <CardContent className="p-5 space-y-3">
                 <div className="flex items-center justify-between">
-                  <h3 className="font-bold text-slate-900 dark:text-white text-base flex items-center gap-2">
-                    <Sparkles className="h-4 w-4 text-emerald-600" /> AI Nutrition Summary
+                  <h3 className="font-bold text-slate-900 dark:text-white text-base">
+                    Nutrition Summary
                   </h3>
                   <Badge variant="outline" className="text-xs">Approximate</Badge>
                 </div>

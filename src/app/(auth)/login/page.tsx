@@ -51,14 +51,11 @@ function LoginForm() {
   return (
     <Card className="w-full max-w-md p-8 shadow-xl border-slate-200/80 dark:border-slate-800/80 rounded-2xl">
       <div className="flex flex-col items-center gap-2 mb-6">
-        <div className="h-12 w-12 rounded-2xl bg-gradient-to-br from-emerald-500 to-emerald-600 flex items-center justify-center text-white font-bold text-xl shadow-lg shadow-emerald-600/30">
-          <Sparkles className="h-6 w-6" />
-        </div>
         <h2 className="text-2xl font-bold text-slate-900 dark:text-slate-100 tracking-tight">
           Sign In to NutriMentor
         </h2>
         <p className="text-slate-500 dark:text-slate-400 text-sm text-center">
-          AI Nutrition Companion for Indian & Homemade Meals
+          Mindful Nutrition Companion
         </p>
       </div>
 

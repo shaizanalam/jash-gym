@@ -568,8 +568,8 @@ export default function JournalPage() {
 
           {entries.length === 0 && !loading && (
             <Card className="border-dashed border-2 border-slate-200 dark:border-slate-800 p-12 text-center rounded-2xl">
-              <div className="h-12 w-12 rounded-2xl bg-emerald-50 dark:bg-emerald-950/60 text-emerald-600 dark:text-emerald-400 flex items-center justify-center mx-auto mb-3">
-                <Sparkles className="h-6 w-6" />
+              <div className="h-12 w-12 rounded-2xl bg-slate-100 dark:bg-slate-800 text-slate-500 dark:text-slate-400 flex items-center justify-center mx-auto mb-3">
+                <Utensils className="h-6 w-6" />
               </div>
               <h3 className="font-bold text-slate-900 dark:text-white text-base">No Meals Logged Yet</h3>
               <p className="text-xs sm:text-sm text-slate-500 dark:text-slate-400 max-w-sm mx-auto mt-1 mb-5">
