@@ -11,7 +11,7 @@ export async function loadDashboardData() {
   const sevenDaysAgo = new Date(today)
   sevenDaysAgo.setDate(sevenDaysAgo.getDate() - 6)
 
-  const [dbUser, entries, weekEntries, guidance] = await Promise.all([
+  const [dbUser, entries, weekEntries, profile, guidance] = await Promise.all([
     prisma.user.findUnique({ where: { id: userId }, select: { name: true } }),
     prisma.foodEntry.findMany({
       where: { userId, loggedAt: { gte: today } },
@@ -21,8 +21,16 @@ export async function loadDashboardData() {
       where: { userId, loggedAt: { gte: sevenDaysAgo } },
       orderBy: { loggedAt: "asc" },
     }),
+    prisma.nutritionProfile.findUnique({ where: { userId } }),
     prisma.professionalGuidance.findUnique({ where: { userId } }),
   ])
+
+  const needsOnboarding =
+    !guidance?.dailyCalorieRef &&
+    !profile?.weightKg &&
+    !profile?.heightCm &&
+    !profile?.age &&
+    weekEntries.length === 0
 
   return {
     userName: dbUser?.name || session.user.name || "there",
@@ -35,6 +43,7 @@ export async function loadDashboardData() {
       loggedAt: e.loggedAt.toISOString(),
     })),
     guidance,
+    needsOnboarding,
   }
 }
 

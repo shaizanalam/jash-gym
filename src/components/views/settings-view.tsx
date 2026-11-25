@@ -16,6 +16,8 @@ import {
   Trash2,
   Loader2,
   LogOut,
+  ChevronDown,
+  ChevronUp,
 } from "lucide-react"
 import { Card, Badge, Button, Input } from "@/components/ui/index"
 import { useAppSession } from "@/components/providers"
@@ -52,8 +54,7 @@ export interface SettingsInitialData {
 const serverSnapshot = () => -1
 
 export function SettingsView({ initialData }: { initialData?: SettingsInitialData }) {
-  const router = useRouter()
-  const { data: session, signOutUser } = useAppSession()
+  const { data: session } = useAppSession()
   const userId = session?.user?.id
   const storeVersion = React.useSyncExternalStore(
     subscribeLocalStore,
@@ -75,6 +76,7 @@ export function SettingsView({ initialData }: { initialData?: SettingsInitialDat
   const [downloadingModel, setDownloadingModel] = React.useState<OnDeviceModelType | null>(null)
   const [downloadPct, setDownloadPct] = React.useState(0)
   const [modelNotice, setModelNotice] = React.useState<string | null>(null)
+  const [showAdvancedAi, setShowAdvancedAi] = React.useState(false)
 
   React.useEffect(() => {
     if (!localMode) return
@@ -146,13 +148,6 @@ export function SettingsView({ initialData }: { initialData?: SettingsInitialDat
     setTimeout(() => setSavedKeyNotice(false), 3000)
   }
 
-  const handleLogout = async () => {
-    await signOutUser()
-    if (localMode) {
-      router.replace("/login")
-    }
-  }
-
   return (
     <div className="flex-1 p-4 sm:p-6 lg:p-8 max-w-2xl mx-auto space-y-6 w-full">
       <div className="pb-1 border-b border-[#253745]/40">
@@ -204,17 +199,6 @@ export function SettingsView({ initialData }: { initialData?: SettingsInitialDat
               All your meal logs, nutritional parameters, and profile details are encrypted and strictly isolated to your account.
             </span>
           </div>
-
-          <div className="pt-3 border-t border-[#253745]/30">
-            <button
-              type="button"
-              onClick={handleLogout}
-              className="flex w-full min-h-[44px] touch-manipulation items-center justify-center gap-2 px-3 py-2.5 rounded-xl text-xs font-medium text-rose-400 bg-rose-500/10 hover:bg-rose-500/20 border border-rose-500/20 transition-colors cursor-pointer"
-            >
-              <LogOut className="h-3.5 w-3.5" />
-              Sign out
-            </button>
-          </div>
         </div>
       </Card>
 
@@ -223,169 +207,182 @@ export function SettingsView({ initialData }: { initialData?: SettingsInitialDat
           <div className="flex items-center justify-between pb-3 border-b border-[#253745]/40">
             <div className="flex items-center gap-2">
               <Smartphone className="h-4 w-4 text-emerald-400" />
-              <h3 className="text-sm font-semibold text-[#CCD0CF]">On-Device Local Mode</h3>
+              <h3 className="text-sm font-semibold text-[#CCD0CF]">Device &amp; AI Status</h3>
             </div>
             <Badge variant="success" className="text-[10px]">
-              Offline Ready
+              Ready
             </Badge>
           </div>
 
           <p className="text-xs text-[#9BA8AB] leading-relaxed">
-            This APK runs completely locally on your device. Food logs, meal plans, and profile targets are saved directly on your phone.
+            Your meals, daily goals, and food library are stored privately on this phone so tracking works fast even offline.
           </p>
 
-          <form onSubmit={handleSaveGeminiKey} className="space-y-2.5 pt-2 border-t border-[#253745]/30">
-            <div className="flex items-center justify-between gap-2">
-              <label className="text-xs font-medium text-[#CCD0CF] flex items-center gap-1.5">
-                <Sparkles className="h-3.5 w-3.5 text-amber-400" />
-                Gemini API Key (for Camera Photo AI)
-              </label>
-              {hasBundledGeminiApiKey() && !geminiKey.trim() && (
-                <Badge variant="success" className="text-[10px]">
-                  Preconfigured
-                </Badge>
-              )}
-            </div>
-            <div className="flex gap-2">
-              <Input
-                type="password"
-                value={geminiKey}
-                onChange={(e) => setGeminiKey(e.target.value)}
-                placeholder={
-                  hasBundledGeminiApiKey()
-                    ? "Using bundled key (paste custom key to override)"
-                    : "Paste Google AI Studio key (optional)"
-                }
-                className="flex-1 h-9 text-xs"
-              />
-              <Button type="submit" variant="secondary" size="sm" className="rounded-xl shrink-0">
-                {savedKeyNotice ? (
-                  <>
-                    <Check className="h-3.5 w-3.5 mr-1 text-emerald-400" /> Saved
-                  </>
-                ) : (
-                  "Save Key"
-                )}
-              </Button>
-            </div>
-          </form>
+          <button
+            type="button"
+            onClick={() => setShowAdvancedAi((prev) => !prev)}
+            className="w-full flex items-center justify-between px-3 py-2.5 rounded-xl bg-[#09131a] border border-[#253745]/60 text-xs font-medium text-[#9BA8AB] hover:text-[#CCD0CF] transition-colors cursor-pointer"
+          >
+            <span>Advanced AI &amp; Offline Model Settings</span>
+            {showAdvancedAi ? <ChevronUp className="h-4 w-4" /> : <ChevronDown className="h-4 w-4" />}
+          </button>
 
-          {/* Tier 2 On-Device MediaPipe / TFLite Model Manager */}
-          <div className="space-y-3 pt-3 border-t border-[#253745]/30">
-            <div className="flex items-center justify-between gap-2">
-              <div className="flex items-center gap-1.5">
-                <Cpu className="h-3.5 w-3.5 text-cyan-400" />
-                <span className="text-xs font-semibold text-[#CCD0CF]">
-                  Tier 2 Offline AI Models (Optional)
-                </span>
-              </div>
-              {capabilities && (
-                <Badge variant={capabilities.supported ? "outline" : "amber"} className="text-[10px]">
-                  {capabilities.supported
-                    ? `${capabilities.abi} • ${capabilities.totalRamMb} MB RAM`
-                    : capabilities.isNativeAndroid
-                      ? `${capabilities.abi} (Unsupported)`
-                      : "Web Browser"}
-                </Badge>
-              )}
-            </div>
-
-            <p className="text-[11px] text-[#9BA8AB] leading-relaxed">
-              Keep the Play Store APK compact (~25 MB) and download MediaPipe models on demand over Wi-Fi for offline parsing &amp; dish classification.
-            </p>
-
-            {modelNotice && (
-              <div className="p-2.5 rounded-xl bg-[#06141B]/70 border border-[#253745] text-[11px] text-[#CCD0CF]">
-                {modelNotice}
-              </div>
-            )}
-
-            <div className="space-y-2 p-3 rounded-xl bg-[#06141B]/40 border border-[#253745]/40">
-              <div className="flex items-center justify-between">
-                <span className="text-xs font-medium text-[#CCD0CF]">
-                  1. Food Vision Classifier (.tflite, ~10 MB)
-                </span>
-                <Badge variant={capabilities?.visionModelReady ? "success" : "outline"} className="text-[10px]">
-                  {capabilities?.visionModelReady ? `Ready (${capabilities.visionModelSizeMb} MB)` : "Not Downloaded"}
-                </Badge>
-              </div>
-              <div className="flex gap-2">
-                <Input
-                  value={visionUrl}
-                  onChange={(e) => setVisionUrl(e.target.value)}
-                  placeholder="https://... food_classifier.tflite URL"
-                  className="flex-1 h-8 text-[11px]"
-                />
-                {capabilities?.visionModelReady ? (
-                  <Button type="button" variant="outline" size="sm" onClick={() => handleModelDelete("vision")} className="rounded-xl shrink-0">
-                    <Trash2 className="h-3.5 w-3.5" />
-                  </Button>
-                ) : (
-                  <Button
-                    type="button"
-                    variant="secondary"
-                    size="sm"
-                    disabled={downloadingModel !== null || !capabilities?.supported}
-                    onClick={() => handleModelDownload("vision")}
-                    className="rounded-xl shrink-0"
-                  >
-                    {downloadingModel === "vision" ? (
+          {showAdvancedAi && (
+            <div className="space-y-4 pt-2">
+              <form onSubmit={handleSaveGeminiKey} className="space-y-2.5 pt-2 border-t border-[#253745]/30">
+                <div className="flex items-center justify-between gap-2">
+                  <label className="text-xs font-medium text-[#CCD0CF] flex items-center gap-1.5">
+                    <Sparkles className="h-3.5 w-3.5 text-amber-400" />
+                    Gemini API Key (for Camera Photo AI)
+                  </label>
+                  {hasBundledGeminiApiKey() && !geminiKey.trim() && (
+                    <Badge variant="success" className="text-[10px]">
+                      Preconfigured
+                    </Badge>
+                  )}
+                </div>
+                <div className="flex gap-2">
+                  <Input
+                    type="password"
+                    value={geminiKey}
+                    onChange={(e) => setGeminiKey(e.target.value)}
+                    placeholder={
+                      hasBundledGeminiApiKey()
+                        ? "Using built-in key (paste custom key to override)"
+                        : "Paste Google AI Studio key (optional)"
+                    }
+                    className="flex-1 h-9 text-xs"
+                  />
+                  <Button type="submit" variant="secondary" size="sm" className="rounded-xl shrink-0">
+                    {savedKeyNotice ? (
                       <>
-                        <Loader2 className="h-3.5 w-3.5 animate-spin mr-1" /> {downloadPct}%
+                        <Check className="h-3.5 w-3.5 mr-1 text-emerald-400" /> Saved
                       </>
                     ) : (
-                      <>
-                        <Download className="h-3.5 w-3.5 mr-1" /> Download
-                      </>
+                      "Save Key"
                     )}
                   </Button>
-                )}
-              </div>
-            </div>
+                </div>
+              </form>
 
-            <div className="space-y-2 p-3 rounded-xl bg-[#06141B]/40 border border-[#253745]/40">
-              <div className="flex items-center justify-between">
-                <span className="text-xs font-medium text-[#CCD0CF]">
-                  2. Gemma / Qwen Meal Parser (.task, ~550 MB)
-                </span>
-                <Badge variant={capabilities?.llmModelReady ? "success" : "outline"} className="text-[10px]">
-                  {capabilities?.llmModelReady ? `Ready (${capabilities.llmModelSizeMb} MB)` : "Not Downloaded"}
-                </Badge>
-              </div>
-              <div className="flex gap-2">
-                <Input
-                  value={llmUrl}
-                  onChange={(e) => setLlmUrl(e.target.value)}
-                  placeholder="https://... gemma3_1b_int4.task URL"
-                  className="flex-1 h-8 text-[11px]"
-                />
-                {capabilities?.llmModelReady ? (
-                  <Button type="button" variant="outline" size="sm" onClick={() => handleModelDelete("llm")} className="rounded-xl shrink-0">
-                    <Trash2 className="h-3.5 w-3.5" />
-                  </Button>
-                ) : (
-                  <Button
-                    type="button"
-                    variant="secondary"
-                    size="sm"
-                    disabled={downloadingModel !== null || !capabilities?.supported}
-                    onClick={() => handleModelDownload("llm")}
-                    className="rounded-xl shrink-0"
-                  >
-                    {downloadingModel === "llm" ? (
-                      <>
-                        <Loader2 className="h-3.5 w-3.5 animate-spin mr-1" /> {downloadPct}%
-                      </>
-                    ) : (
-                      <>
-                        <Download className="h-3.5 w-3.5 mr-1" /> Download
-                      </>
-                    )}
-                  </Button>
+              {/* Tier 2 On-Device MediaPipe / TFLite Model Manager */}
+              <div className="space-y-3 pt-3 border-t border-[#253745]/30">
+                <div className="flex items-center justify-between gap-2">
+                  <div className="flex items-center gap-1.5">
+                    <Cpu className="h-3.5 w-3.5 text-cyan-400" />
+                    <span className="text-xs font-semibold text-[#CCD0CF]">
+                      Offline AI Models (Optional)
+                    </span>
+                  </div>
+                  {capabilities && (
+                    <Badge variant={capabilities.supported ? "outline" : "amber"} className="text-[10px]">
+                      {capabilities.supported
+                        ? `${capabilities.abi} • ${capabilities.totalRamMb} MB RAM`
+                        : capabilities.isNativeAndroid
+                          ? `${capabilities.abi} (Unsupported)`
+                          : "Web Browser"}
+                    </Badge>
+                  )}
+                </div>
+
+                <p className="text-[11px] text-[#9BA8AB] leading-relaxed">
+                  Download optional on-device models over Wi-Fi for offline food recognition without internet.
+                </p>
+
+                {modelNotice && (
+                  <div className="p-2.5 rounded-xl bg-[#06141B]/70 border border-[#253745] text-[11px] text-[#CCD0CF]">
+                    {modelNotice}
+                  </div>
                 )}
+
+                <div className="space-y-2 p-3 rounded-xl bg-[#06141B]/40 border border-[#253745]/40">
+                  <div className="flex items-center justify-between">
+                    <span className="text-xs font-medium text-[#CCD0CF]">
+                      1. Food Vision Classifier (.tflite, ~10 MB)
+                    </span>
+                    <Badge variant={capabilities?.visionModelReady ? "success" : "outline"} className="text-[10px]">
+                      {capabilities?.visionModelReady ? `Ready (${capabilities.visionModelSizeMb} MB)` : "Not Downloaded"}
+                    </Badge>
+                  </div>
+                  <div className="flex gap-2">
+                    <Input
+                      value={visionUrl}
+                      onChange={(e) => setVisionUrl(e.target.value)}
+                      placeholder="https://... food_classifier.tflite URL"
+                      className="flex-1 h-8 text-[11px]"
+                    />
+                    {capabilities?.visionModelReady ? (
+                      <Button type="button" variant="outline" size="sm" onClick={() => handleModelDelete("vision")} className="rounded-xl shrink-0">
+                        <Trash2 className="h-3.5 w-3.5" />
+                      </Button>
+                    ) : (
+                      <Button
+                        type="button"
+                        variant="secondary"
+                        size="sm"
+                        disabled={downloadingModel !== null || !capabilities?.supported}
+                        onClick={() => handleModelDownload("vision")}
+                        className="rounded-xl shrink-0"
+                      >
+                        {downloadingModel === "vision" ? (
+                          <>
+                            <Loader2 className="h-3.5 w-3.5 animate-spin mr-1" /> {downloadPct}%
+                          </>
+                        ) : (
+                          <>
+                            <Download className="h-3.5 w-3.5 mr-1" /> Download
+                          </>
+                        )}
+                      </Button>
+                    )}
+                  </div>
+                </div>
+
+                <div className="space-y-2 p-3 rounded-xl bg-[#06141B]/40 border border-[#253745]/40">
+                  <div className="flex items-center justify-between">
+                    <span className="text-xs font-medium text-[#CCD0CF]">
+                      2. On-Device Meal Parser (.task, ~550 MB)
+                    </span>
+                    <Badge variant={capabilities?.llmModelReady ? "success" : "outline"} className="text-[10px]">
+                      {capabilities?.llmModelReady ? `Ready (${capabilities.llmModelSizeMb} MB)` : "Not Downloaded"}
+                    </Badge>
+                  </div>
+                  <div className="flex gap-2">
+                    <Input
+                      value={llmUrl}
+                      onChange={(e) => setLlmUrl(e.target.value)}
+                      placeholder="https://... gemma3_1b_int4.task URL"
+                      className="flex-1 h-8 text-[11px]"
+                    />
+                    {capabilities?.llmModelReady ? (
+                      <Button type="button" variant="outline" size="sm" onClick={() => handleModelDelete("llm")} className="rounded-xl shrink-0">
+                        <Trash2 className="h-3.5 w-3.5" />
+                      </Button>
+                    ) : (
+                      <Button
+                        type="button"
+                        variant="secondary"
+                        size="sm"
+                        disabled={downloadingModel !== null || !capabilities?.supported}
+                        onClick={() => handleModelDownload("llm")}
+                        className="rounded-xl shrink-0"
+                      >
+                        {downloadingModel === "llm" ? (
+                          <>
+                            <Loader2 className="h-3.5 w-3.5 animate-spin mr-1" /> {downloadPct}%
+                          </>
+                        ) : (
+                          <>
+                            <Download className="h-3.5 w-3.5 mr-1" /> Download
+                          </>
+                        )}
+                      </Button>
+                    )}
+                  </div>
+                </div>
               </div>
             </div>
-          </div>
+          )}
         </Card>
       )}
 

@@ -1,6 +1,7 @@
 "use client"
 
-import { useEffect, useState } from "react"
+import { Suspense, useEffect, useState } from "react"
+import { useSearchParams } from "next/navigation"
 import {
   Card,
   CardContent,
@@ -69,7 +70,15 @@ const COMMON_PRESETS = [
   { name: "Chicken Curry with Rice", category: "dinner" },
 ]
 
-export default function JournalPage() {
+function JournalContent() {
+  const searchParams = useSearchParams()
+  const initialCatParam = searchParams.get("category")
+  const initialCategory =
+    initialCatParam && MEAL_CATEGORIES.some((m) => m.id === initialCatParam)
+      ? initialCatParam
+      : "lunch"
+  const initialWantsNew = searchParams.get("new") === "1" || Boolean(initialCatParam)
+
   const [entries, setEntries] = useState<FoodEntry[]>([])
   const [targets, setTargets] = useState<ResolvedNutritionTargets>(() =>
     resolveNutritionTargets(null)
@@ -80,14 +89,16 @@ export default function JournalPage() {
   const [expandedId, setExpandedId] = useState<string | null>(null)
 
   // Add / Edit Modal state
-  const [showAddModal, setShowAddModal] = useState(false)
+  const [showAddModal, setShowAddModal] = useState(initialWantsNew)
   const [editingEntry, setEditingEntry] = useState<FoodEntry | null>(null)
   const [submitting, setSubmitting] = useState(false)
   const [aiAnalyzing, setAiAnalyzing] = useState(false)
+  const [showMacroInputs, setShowMacroInputs] = useState(false)
+  const [hasEstimated, setHasEstimated] = useState(false)
 
   // Form state
   const [formFoodName, setFormFoodName] = useState("")
-  const [formCategory, setFormCategory] = useState("lunch")
+  const [formCategory, setFormCategory] = useState(initialCategory)
   const [formPortion, setFormPortion] = useState("150")
   const [formCalories, setFormCalories] = useState("250")
   const [formProtein, setFormProtein] = useState("10")
@@ -145,6 +156,8 @@ export default function JournalPage() {
     setFormFat(String(entry.fatG))
     setFormFibre(String(entry.fibreG || 0))
     setFormNotes(entry.notes || "")
+    setShowMacroInputs(true)
+    setHasEstimated(true)
     setShowAddModal(true)
   }
 
@@ -159,6 +172,8 @@ export default function JournalPage() {
     setFormFat("6")
     setFormFibre("4")
     setFormNotes("")
+    setShowMacroInputs(false)
+    setHasEstimated(false)
     setShowAddModal(true)
   }
 
@@ -183,6 +198,7 @@ export default function JournalPage() {
         setFormFat(String(first.fatG || 6))
         setFormFibre(String(first.fibreG || 4))
         setFormPortion(String(first.estimatedPortionG || 150))
+        setHasEstimated(true)
       }
     } catch (err) {
       console.warn("AI analysis fallback", err)
@@ -196,15 +212,39 @@ export default function JournalPage() {
     if (!formFoodName.trim()) return
     setSubmitting(true)
 
+    let calories = Number(formCalories) || 0
+    let proteinG = Number(formProtein) || 0
+    let carbsG = Number(formCarbs) || 0
+    let fatG = Number(formFat) || 0
+    let fibreG = Number(formFibre) || 0
+    let estimatedPortionG = Number(formPortion) || 100
+
+    if (!editingEntry && !hasEstimated) {
+      try {
+        const data = await apiAnalyzeFood({ textDescription: formFoodName.trim() })
+        if (data?.items?.length > 0) {
+          const first = data.items[0]
+          calories = Math.round(first.calories || calories)
+          proteinG = Number(first.proteinG ?? proteinG)
+          carbsG = Number(first.carbsG ?? carbsG)
+          fatG = Number(first.fatG ?? fatG)
+          fibreG = Number(first.fibreG ?? fibreG)
+          estimatedPortionG = Number(first.estimatedPortionG ?? estimatedPortionG)
+        }
+      } catch {
+        // Fallback to entered/default numbers if offline estimation fails
+      }
+    }
+
     const payload = {
       foodName: formFoodName.trim(),
       mealCategory: formCategory,
-      estimatedPortionG: Number(formPortion) || 100,
-      calories: Number(formCalories) || 0,
-      proteinG: Number(formProtein) || 0,
-      carbsG: Number(formCarbs) || 0,
-      fatG: Number(formFat) || 0,
-      fibreG: Number(formFibre) || 0,
+      estimatedPortionG,
+      calories,
+      proteinG,
+      carbsG,
+      fatG,
+      fibreG,
       notes: formNotes.trim() || null,
       isAiGenerated: true,
       isConfirmedByUser: true,
@@ -531,7 +571,10 @@ export default function JournalPage() {
               <div className="flex gap-2">
                 <Input
                   value={formFoodName}
-                  onChange={(e) => setFormFoodName(e.target.value)}
+                  onChange={(e) => {
+                    setFormFoodName(e.target.value)
+                    if (!editingEntry) setHasEstimated(false)
+                  }}
                   placeholder="e.g. 2 Rotis with Dal Tadka"
                   required
                   className="flex-1"
@@ -586,51 +629,91 @@ export default function JournalPage() {
               </div>
             </div>
 
-            {/* Macros Grid */}
-            <div className="grid grid-cols-2 sm:grid-cols-4 gap-2 pt-1">
-              <div>
-                <label className="text-[10px] text-amber-400 block mb-1">Calories (kcal)</label>
-                <Input
-                  type="number"
-                  value={formCalories}
-                  onChange={(e) => setFormCalories(e.target.value)}
-                  className="h-8 text-xs font-mono"
-                  required
-                />
+            {/* Nutrition Preview + Collapsible Manual Edit */}
+            <div className="rounded-xl bg-[#09131a] border border-[#253745]/60 p-3 space-y-2.5">
+              <div className="flex items-center justify-between gap-2">
+                <div className="text-xs text-[#CCD0CF] font-mono tabular-nums">
+                  {hasEstimated ? (
+                    <span>
+                      <strong>{Math.round(Number(formCalories) || 0)} kcal</strong> · P {formProtein}g · C {formCarbs}g · F {formFat}g
+                    </span>
+                  ) : (
+                    <span className="font-sans text-[#9BA8AB]">
+                      Nutrition will auto-calculate on save
+                    </span>
+                  )}
+                </div>
+                <button
+                  type="button"
+                  onClick={() => {
+                    setShowMacroInputs((prev) => !prev)
+                    setHasEstimated(true)
+                  }}
+                  className="text-[11px] font-medium text-[#9BA8AB] hover:text-[#CCD0CF] underline underline-offset-2 shrink-0 cursor-pointer"
+                >
+                  {showMacroInputs ? "Hide numbers" : "Edit numbers"}
+                </button>
               </div>
-              <div>
-                <label className="text-[10px] text-emerald-400 block mb-1">Protein (g)</label>
-                <Input
-                  type="number"
-                  step="0.1"
-                  value={formProtein}
-                  onChange={(e) => setFormProtein(e.target.value)}
-                  className="h-8 text-xs font-mono"
-                  required
-                />
-              </div>
-              <div>
-                <label className="text-[10px] text-cyan-400 block mb-1">Carbs (g)</label>
-                <Input
-                  type="number"
-                  step="0.1"
-                  value={formCarbs}
-                  onChange={(e) => setFormCarbs(e.target.value)}
-                  className="h-8 text-xs font-mono"
-                  required
-                />
-              </div>
-              <div>
-                <label className="text-[10px] text-amber-400 block mb-1">Fat (g)</label>
-                <Input
-                  type="number"
-                  step="0.1"
-                  value={formFat}
-                  onChange={(e) => setFormFat(e.target.value)}
-                  className="h-8 text-xs font-mono"
-                  required
-                />
-              </div>
+
+              {showMacroInputs && (
+                <div className="grid grid-cols-2 sm:grid-cols-4 gap-2 pt-2 border-t border-[#253745]/40">
+                  <div>
+                    <label className="text-[10px] text-amber-400 block mb-1">Calories (kcal)</label>
+                    <Input
+                      type="number"
+                      value={formCalories}
+                      onChange={(e) => {
+                        setFormCalories(e.target.value)
+                        setHasEstimated(true)
+                      }}
+                      className="h-8 text-xs font-mono"
+                      required
+                    />
+                  </div>
+                  <div>
+                    <label className="text-[10px] text-emerald-400 block mb-1">Protein (g)</label>
+                    <Input
+                      type="number"
+                      step="0.1"
+                      value={formProtein}
+                      onChange={(e) => {
+                        setFormProtein(e.target.value)
+                        setHasEstimated(true)
+                      }}
+                      className="h-8 text-xs font-mono"
+                      required
+                    />
+                  </div>
+                  <div>
+                    <label className="text-[10px] text-cyan-400 block mb-1">Carbs (g)</label>
+                    <Input
+                      type="number"
+                      step="0.1"
+                      value={formCarbs}
+                      onChange={(e) => {
+                        setFormCarbs(e.target.value)
+                        setHasEstimated(true)
+                      }}
+                      className="h-8 text-xs font-mono"
+                      required
+                    />
+                  </div>
+                  <div>
+                    <label className="text-[10px] text-amber-400 block mb-1">Fat (g)</label>
+                    <Input
+                      type="number"
+                      step="0.1"
+                      value={formFat}
+                      onChange={(e) => {
+                        setFormFat(e.target.value)
+                        setHasEstimated(true)
+                      }}
+                      className="h-8 text-xs font-mono"
+                      required
+                    />
+                  </div>
+                </div>
+              )}
             </div>
 
             <div className="flex items-center justify-end gap-2 pt-3 border-t border-[#253745]/40">
@@ -657,5 +740,13 @@ export default function JournalPage() {
         </div>
       </BottomSheet>
     </div>
+  )
+}
+
+export default function JournalPage() {
+  return (
+    <Suspense fallback={null}>
+      <JournalContent />
+    </Suspense>
   )
 }

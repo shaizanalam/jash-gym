@@ -24,6 +24,8 @@ import {
   RotateCcw,
   Save,
   Settings,
+  ChevronDown,
+  ChevronUp,
 } from "lucide-react"
 import {
   DIETARY_PREFERENCES,
@@ -238,6 +240,8 @@ export default function ProfilePage() {
   const [errorMessage, setErrorMessage] = React.useState<string | null>(null)
   const [estimateNotice, setEstimateNotice] = React.useState<string | null>(null)
   const [touchedFields, setTouchedFields] = React.useState<Record<string, boolean>>({})
+  const [showClinicalNotes, setShowClinicalNotes] = React.useState(false)
+  const [showDietaryNotes, setShowDietaryNotes] = React.useState(false)
 
   const toastTimerRef = React.useRef<ReturnType<typeof setTimeout> | null>(null)
   const savedBadgeTimerRef = React.useRef<ReturnType<typeof setTimeout> | null>(null)
@@ -308,6 +312,8 @@ export default function ProfilePage() {
     setSavedTargetsSnapshot(nextTargets)
     setProfileForm(nextProfile)
     setSavedProfileSnapshot(nextProfile)
+    setShowClinicalNotes(Boolean(nextTargets.sourceNotes || nextTargets.enteredByProfessional))
+    setShowDietaryNotes(Boolean(nextProfile.allergies || nextProfile.restrictions))
     setTouchedFields({})
   }, [])
 
@@ -733,7 +739,7 @@ export default function ProfilePage() {
                 Daily Targets
               </h2>
               <p className="text-xs text-[#9BA8AB] mt-0.5">
-                Blank inputs use baseline defaults ({DEFAULT_NUTRITION_TARGETS.calories.toLocaleString()} kcal).
+                Set your daily calorie &amp; macro goals, or auto-calculate from your body stats.
               </p>
             </div>
             {hasCustomTargets && (
@@ -1047,45 +1053,58 @@ export default function ProfilePage() {
               )}
             </div>
 
-            {/* Notes & Clinician Reference */}
-            <div className="pt-2 border-t border-[#253745]/45 space-y-3.5">
-              <div>
-                <div className="flex items-center justify-between mb-1.5">
-                  <label htmlFor="target-notes" className="text-xs font-medium text-[#CCD0CF]">
-                    Plan notes
-                  </label>
-                  <span className="text-[11px] text-[#9BA8AB]">Optional</span>
-                </div>
-                <Textarea
-                  id="target-notes"
-                  name="sourceNotes"
-                  value={targetsForm.sourceNotes}
-                  onChange={(e) =>
-                    setTargetsForm((prev) => ({ ...prev, sourceNotes: e.target.value }))
-                  }
-                  placeholder="Cut phase, coach name, or nutritionist plan"
-                  className="min-h-[64px] text-base sm:text-sm bg-[#0b1620] border-[#253745]/80"
-                />
-              </div>
+            {/* Optional Notes & Clinician Reference */}
+            <div className="pt-2 border-t border-[#253745]/45 space-y-3">
+              <button
+                type="button"
+                onClick={() => setShowClinicalNotes((prev) => !prev)}
+                className="w-full flex items-center justify-between px-3 py-2 rounded-xl bg-[#08121a] border border-[#253745]/60 text-xs font-medium text-[#9BA8AB] hover:text-[#CCD0CF] transition-colors cursor-pointer"
+              >
+                <span>Optional plan notes &amp; clinician tag</span>
+                {showClinicalNotes ? <ChevronUp className="h-3.5 w-3.5" /> : <ChevronDown className="h-3.5 w-3.5" />}
+              </button>
 
-              <div className="flex items-center justify-between gap-3 px-3.5 py-3 min-h-[56px] rounded-xl bg-[#08121a] border border-[#253745]/55">
-                <label htmlFor="target-professional" className="cursor-pointer pr-2">
-                  <span className="text-xs font-medium text-[#CCD0CF] block">
-                    Dietitian or clinician plan
-                  </span>
-                  <span className="text-[11px] text-[#9BA8AB]">
-                    Mark targets prescribed by a healthcare professional
-                  </span>
-                </label>
-                <Switch
-                  id="target-professional"
-                  checked={targetsForm.enteredByProfessional}
-                  onCheckedChange={(checked) =>
-                    setTargetsForm((prev) => ({ ...prev, enteredByProfessional: checked }))
-                  }
-                  aria-label="Dietitian or clinician plan"
-                />
-              </div>
+              {showClinicalNotes && (
+                <div className="space-y-3">
+                  <div>
+                    <div className="flex items-center justify-between mb-1.5">
+                      <label htmlFor="target-notes" className="text-xs font-medium text-[#CCD0CF]">
+                        Plan notes
+                      </label>
+                      <span className="text-[11px] text-[#9BA8AB]">Optional</span>
+                    </div>
+                    <Textarea
+                      id="target-notes"
+                      name="sourceNotes"
+                      value={targetsForm.sourceNotes}
+                      onChange={(e) =>
+                        setTargetsForm((prev) => ({ ...prev, sourceNotes: e.target.value }))
+                      }
+                      placeholder="Cut phase, coach name, or nutritionist plan"
+                      className="min-h-[64px] text-base sm:text-sm bg-[#0b1620] border-[#253745]/80"
+                    />
+                  </div>
+
+                  <div className="flex items-center justify-between gap-3 px-3.5 py-3 min-h-[56px] rounded-xl bg-[#08121a] border border-[#253745]/55">
+                    <label htmlFor="target-professional" className="cursor-pointer pr-2">
+                      <span className="text-xs font-medium text-[#CCD0CF] block">
+                        Dietitian or clinician plan
+                      </span>
+                      <span className="text-[11px] text-[#9BA8AB]">
+                        Mark targets prescribed by a healthcare professional
+                      </span>
+                    </label>
+                    <Switch
+                      id="target-professional"
+                      checked={targetsForm.enteredByProfessional}
+                      onCheckedChange={(checked) =>
+                        setTargetsForm((prev) => ({ ...prev, enteredByProfessional: checked }))
+                      }
+                      aria-label="Dietitian or clinician plan"
+                    />
+                  </div>
+                </div>
+              )}
             </div>
 
             <Button
@@ -1408,45 +1427,58 @@ export default function ProfilePage() {
               </div>
             </div>
 
-            {/* Allergies & Restrictions */}
-            <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 pt-1">
-              <div>
-                <label
-                  htmlFor="profile-allergies"
-                  className="text-xs font-medium text-[#CCD0CF] block mb-1.5"
-                >
-                  Allergies
-                </label>
-                <Input
-                  id="profile-allergies"
-                  name="allergies"
-                  value={profileForm.allergies}
-                  onChange={(e) =>
-                    setProfileForm((prev) => ({ ...prev, allergies: e.target.value }))
-                  }
-                  placeholder="Peanuts, dairy, gluten"
-                  className="h-12 sm:h-11 bg-[#0b1620] border-[#253745]/80 text-base sm:text-sm"
-                />
-              </div>
+            {/* Optional Allergies & Restrictions */}
+            <div className="space-y-2.5 pt-1">
+              <button
+                type="button"
+                onClick={() => setShowDietaryNotes((prev) => !prev)}
+                className="w-full flex items-center justify-between px-3 py-2 rounded-xl bg-[#08121a] border border-[#253745]/60 text-xs font-medium text-[#9BA8AB] hover:text-[#CCD0CF] transition-colors cursor-pointer"
+              >
+                <span>Optional allergies &amp; restrictions</span>
+                {showDietaryNotes ? <ChevronUp className="h-3.5 w-3.5" /> : <ChevronDown className="h-3.5 w-3.5" />}
+              </button>
 
-              <div>
-                <label
-                  htmlFor="profile-restrictions"
-                  className="text-xs font-medium text-[#CCD0CF] block mb-1.5"
-                >
-                  Restrictions
-                </label>
-                <Input
-                  id="profile-restrictions"
-                  name="restrictions"
-                  value={profileForm.restrictions}
-                  onChange={(e) =>
-                    setProfileForm((prev) => ({ ...prev, restrictions: e.target.value }))
-                  }
-                  placeholder="Low sodium, no sugar"
-                  className="h-12 sm:h-11 bg-[#0b1620] border-[#253745]/80 text-base sm:text-sm"
-                />
-              </div>
+              {showDietaryNotes && (
+                <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 pt-1">
+                  <div>
+                    <label
+                      htmlFor="profile-allergies"
+                      className="text-xs font-medium text-[#CCD0CF] block mb-1.5"
+                    >
+                      Allergies
+                    </label>
+                    <Input
+                      id="profile-allergies"
+                      name="allergies"
+                      value={profileForm.allergies}
+                      onChange={(e) =>
+                        setProfileForm((prev) => ({ ...prev, allergies: e.target.value }))
+                      }
+                      placeholder="Peanuts, dairy, gluten"
+                      className="h-12 sm:h-11 bg-[#0b1620] border-[#253745]/80 text-base sm:text-sm"
+                    />
+                  </div>
+
+                  <div>
+                    <label
+                      htmlFor="profile-restrictions"
+                      className="text-xs font-medium text-[#CCD0CF] block mb-1.5"
+                    >
+                      Restrictions
+                    </label>
+                    <Input
+                      id="profile-restrictions"
+                      name="restrictions"
+                      value={profileForm.restrictions}
+                      onChange={(e) =>
+                        setProfileForm((prev) => ({ ...prev, restrictions: e.target.value }))
+                      }
+                      placeholder="Low sodium, no sugar"
+                      className="h-12 sm:h-11 bg-[#0b1620] border-[#253745]/80 text-base sm:text-sm"
+                    />
+                  </div>
+                </div>
+              )}
             </div>
 
             <Button

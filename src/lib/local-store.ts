@@ -595,13 +595,20 @@ export function getLocalDashboardData(userId: string) {
     .filter((e) => new Date(e.loggedAt) >= today)
     .sort((a, b) => new Date(b.loggedAt).getTime() - new Date(a.loggedAt).getTime())
   const weekEntries = userEntries.filter((e) => new Date(e.loggedAt) >= sevenDaysAgo)
-  const { user, guidance } = getLocalProfileData(userId)
+  const { profile, user, guidance } = getLocalProfileData(userId)
+  const needsOnboarding =
+    !guidance?.dailyCalorieRef &&
+    !profile?.weightKg &&
+    !profile?.heightCm &&
+    !profile?.age &&
+    weekEntries.length === 0
 
   return {
     userName: user?.name || "there",
     entries: todayEntries,
     weekEntries,
     guidance,
+    needsOnboarding,
   }
 }
 

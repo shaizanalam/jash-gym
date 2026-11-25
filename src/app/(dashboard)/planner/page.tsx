@@ -76,9 +76,12 @@ export default function PlannerPage() {
   async function loadItems() {
     setLoading(true)
     try {
-      const data = await apiFetchMealPlans(date)
-      const flat = (data as any[]).flatMap((plan: any) =>
-        (plan.items || []).map((item: any) => ({ ...item, planId: plan.id }))
+      const data = (await apiFetchMealPlans(date)) as Array<{
+        id: string
+        items?: MealPlanItem[]
+      }>
+      const flat = data.flatMap((plan) =>
+        (plan.items || []).map((item) => ({ ...item, planId: plan.id }))
       )
       setItems(flat)
     } catch (err) {
@@ -223,10 +226,10 @@ export default function PlannerPage() {
         <div className="flex items-center justify-between pb-2 text-xs">
           <div className="flex items-center gap-2">
             <CheckCircle2 className="h-4 w-4 text-emerald-400" />
-            <span className="font-semibold text-[#CCD0CF]">Day's Progress</span>
+            <span className="font-semibold text-[#CCD0CF]">Day&apos;s Progress</span>
             <span className="text-[#9BA8AB]">
               {totalCount === 0
-                ? "No meals planned yet"
+                ? "Plan meals ahead for the day — tap + Add on any slot below"
                 : `${completedCount} of ${totalCount} dishes completed (${completionPct}%)`}
             </span>
           </div>

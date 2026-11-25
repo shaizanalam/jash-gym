@@ -7,6 +7,8 @@ import {
   Calendar,
   ArrowRight,
   CheckCircle2,
+  Camera,
+  Utensils,
   SlidersHorizontal,
   User,
   Settings,
@@ -22,6 +24,7 @@ import {
   Badge,
   Progress,
 } from "@/components/ui/index"
+import { OnboardingWizard } from "@/components/onboarding-wizard"
 import { DashboardTrendChart } from "@/components/charts/nutrition-charts"
 import { MEAL_CATEGORIES } from "@/lib/constants"
 import { startOfDayIST } from "@/lib/dates"
@@ -51,9 +54,13 @@ export interface DashboardInitialData {
   entries: DashboardFoodEntry[]
   weekEntries: DashboardFoodEntry[]
   guidance: GuidanceRecord | null
+  needsOnboarding?: boolean
 }
 
 const serverSnapshot = () => -1
+const emptySubscribe = () => () => {}
+const clientHydratedSnapshot = () => true
+const serverHydratedSnapshot = () => false
 
 export function DashboardView({ initialData }: { initialData?: DashboardInitialData }) {
   const { data: session } = useAppSession()
@@ -148,6 +155,32 @@ export function DashboardView({ initialData }: { initialData?: DashboardInitialD
     day: "numeric",
   }).format(new Date())
 
+  const isClientHydrated = React.useSyncExternalStore(
+    emptySubscribe,
+    clientHydratedSnapshot,
+    serverHydratedSnapshot
+  )
+  const [dismissedOverride, setDismissedOverride] = React.useState(false)
+
+  const dismissOnboarding = React.useCallback(() => {
+    if (typeof window !== "undefined") {
+      const key = `nutrimentor_onboarding_done_${userId || "default"}`
+      window.localStorage.setItem(key, "1")
+    }
+    setDismissedOverride(true)
+  }, [userId])
+
+  const onboardingDismissed =
+    !isClientHydrated ||
+    dismissedOverride ||
+    window.localStorage.getItem(`nutrimentor_onboarding_done_${userId || "default"}`) === "1"
+  const showOnboarding = Boolean(data?.needsOnboarding && !onboardingDismissed)
+  const isBrandNewUser = entries.length === 0 && weekEntries.length === 0
+  const primaryMealIds = new Set(["breakfast", "lunch", "dinner"])
+  const visibleMeals = byMeal.filter(
+    (meal) => primaryMealIds.has(meal.id) || meal.count > 0
+  )
+
   return (
     <div className="flex-1 p-4 sm:p-6 lg:p-8 space-y-6 max-w-6xl w-full mx-auto">
       <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4 pb-1">
@@ -181,14 +214,8 @@ export function DashboardView({ initialData }: { initialData?: DashboardInitialD
         </div>
 
         <div className="flex flex-wrap items-center gap-2">
-          <Button variant="outline" asChild size="sm" className="rounded-full">
-            <Link href="/profile#targets">
-              <SlidersHorizontal className="h-3.5 w-3.5 mr-1 text-[#9BA8AB]" />
-              <span>Targets</span>
-            </Link>
-          </Button>
           <Button variant="secondary" asChild size="sm" className="rounded-full">
-            <Link href="/journal">
+            <Link href="/journal?new=1">
               <Plus className="h-3.5 w-3.5 mr-1 text-[#9BA8AB]" />
               <span>Log Food</span>
             </Link>
@@ -197,13 +224,26 @@ export function DashboardView({ initialData }: { initialData?: DashboardInitialD
         </div>
       </div>
 
+      {showOnboarding && (
+        <OnboardingWizard
+          userId={userId}
+          firstName={firstName}
+          onCompleted={dismissOnboarding}
+          onDismiss={dismissOnboarding}
+        />
+      )}
+
       <div className="grid grid-cols-1 md:grid-cols-12 gap-3 sm:gap-4">
         <Card glass hoverable className="md:col-span-4 p-4 flex flex-col justify-between">
           <div className="flex items-center justify-between pb-2">
             <span className="text-xs font-medium text-[#9BA8AB]">Daily Calories</span>
-            <Badge variant="amber" className="text-[10px]">
-              {caloriePercent}% target
-            </Badge>
+            <Link
+              href="/profile#targets"
+              className="inline-flex items-center gap-1 text-[10px] font-medium text-[#9BA8AB] hover:text-[#CCD0CF] px-2 py-0.5 rounded-full bg-[#11212D]/80 border border-[#253745]/60 transition-colors"
+            >
+              <SlidersHorizontal className="h-2.5 w-2.5" />
+              {caloriePercent}% · Edit goal
+            </Link>
           </div>
 
           <div className="my-2">
@@ -317,96 +357,138 @@ export function DashboardView({ initialData }: { initialData?: DashboardInitialD
         </div>
       </div>
 
-      <div className="grid grid-cols-1 lg:grid-cols-12 gap-4">
-        <Card glass hoverable className="lg:col-span-7 flex flex-col">
-          <CardHeader className="pb-2">
-            <div className="flex items-center justify-between">
-              <div>
-                <CardTitle className="text-sm">Weekly Intake Trend</CardTitle>
-                <CardDescription>7-day daily calorie logs vs {targetCalories.toLocaleString()} kcal target</CardDescription>
-              </div>
-              {averageDailyCalories > 0 && (
-                <Badge variant="outline" className="text-[10px] font-mono">
-                  Logged Avg: {averageDailyCalories} kcal/day
-                </Badge>
-              )}
+      {isBrandNewUser ? (
+        <Card glass className="p-6 sm:p-8 text-center">
+          <div className="max-w-md mx-auto space-y-4">
+            <div className="h-12 w-12 rounded-2xl bg-[#11212D] border border-[#253745] flex items-center justify-center text-emerald-400 mx-auto">
+              <Utensils className="h-5 w-5" />
             </div>
-          </CardHeader>
-          <CardContent className="pt-2 flex-1 flex flex-col justify-center">
-            <DashboardTrendChart data={weeklyTrend} targetCalories={targetCalories} />
-          </CardContent>
+            <div>
+              <h2 className="text-base sm:text-lg font-semibold text-[#CCD0CF]">
+                Ready for your first meal
+              </h2>
+              <p className="text-xs text-[#9BA8AB] mt-1 leading-relaxed">
+                Snap a photo of your plate or type what you ate to start tracking your daily calories and macros.
+              </p>
+            </div>
+            <div className="flex flex-wrap items-center justify-center gap-2.5 pt-1">
+              <Button variant="primary" size="default" asChild className="rounded-full">
+                <Link href="/scanner">
+                  <Camera className="h-4 w-4 mr-1.5" />
+                  Scan Meal Photo
+                </Link>
+              </Button>
+              <Button variant="secondary" size="default" asChild className="rounded-full">
+                <Link href="/journal?new=1">
+                  <Plus className="h-4 w-4 mr-1.5" />
+                  Type Meal Manually
+                </Link>
+              </Button>
+            </div>
+          </div>
         </Card>
-
-        <Card glass hoverable className="lg:col-span-5 flex flex-col">
-          <CardHeader className="pb-2">
-            <div className="flex items-center justify-between">
-              <div>
-                <CardTitle className="text-sm">Today&apos;s Meal Progress</CardTitle>
-                <CardDescription>
-                  {byMeal.filter((m) => m.count > 0).length} of {byMeal.length} categories logged
-                </CardDescription>
+      ) : (
+        <div className="grid grid-cols-1 lg:grid-cols-12 gap-4">
+          <Card glass hoverable className="lg:col-span-7 flex flex-col">
+            <CardHeader className="pb-2">
+              <div className="flex items-center justify-between">
+                <div>
+                  <CardTitle className="text-sm">Weekly Intake Trend</CardTitle>
+                  <CardDescription>7-day daily calorie logs vs {targetCalories.toLocaleString()} kcal target</CardDescription>
+                </div>
+                {averageDailyCalories > 0 && (
+                  <Badge variant="outline" className="text-[10px] font-mono">
+                    Logged Avg: {averageDailyCalories} kcal/day
+                  </Badge>
+                )}
               </div>
-              <Link
-                href="/journal"
-                className="text-xs font-medium text-[#9BA8AB] hover:text-[#CCD0CF] flex items-center gap-1"
-              >
-                <span>Journal</span>
-                <ArrowRight className="h-3 w-3" />
-              </Link>
-            </div>
-          </CardHeader>
+            </CardHeader>
+            <CardContent className="pt-2 flex-1 flex flex-col justify-center">
+              <DashboardTrendChart data={weeklyTrend} targetCalories={targetCalories} />
+            </CardContent>
+          </Card>
 
-          <CardContent className="pt-1 flex-1 flex flex-col justify-between">
-            <div className="space-y-1.5">
-              {byMeal.map((meal) => {
-                const isLogged = meal.count > 0
+          <Card glass hoverable className="lg:col-span-5 flex flex-col">
+            <CardHeader className="pb-2">
+              <div className="flex items-center justify-between">
+                <div>
+                  <CardTitle className="text-sm">Today&apos;s Meals</CardTitle>
+                  <CardDescription>
+                    {byMeal.filter((m) => m.count > 0).length} meal{byMeal.filter((m) => m.count > 0).length === 1 ? "" : "s"} logged today
+                  </CardDescription>
+                </div>
+                <Link
+                  href="/journal"
+                  className="text-xs font-medium text-[#9BA8AB] hover:text-[#CCD0CF] flex items-center gap-1"
+                >
+                  <span>Journal</span>
+                  <ArrowRight className="h-3 w-3" />
+                </Link>
+              </div>
+            </CardHeader>
 
-                return (
-                  <div
-                    key={meal.id}
-                    className="flex items-center justify-between p-2.5 rounded-xl border border-[#253745]/40 bg-[#06141B]/30 hover:bg-[#06141B]/60 transition-colors"
-                  >
-                    <div className="flex items-center gap-2.5">
-                      <div
-                        className={`h-7 w-7 rounded-lg flex items-center justify-center text-xs font-medium ${
-                          isLogged
-                            ? "bg-emerald-500/15 text-emerald-400 border border-emerald-500/30"
-                            : "bg-[#11212D] text-[#9BA8AB] border border-[#253745]/50"
-                        }`}
-                      >
-                        {isLogged ? <CheckCircle2 className="h-3.5 w-3.5" /> : <Plus className="h-3.5 w-3.5" />}
-                      </div>
-                      <div>
-                        <span className="text-xs font-medium text-[#CCD0CF] block">
-                          {meal.label}
-                        </span>
-                        <span className="text-[10px] text-[#9BA8AB]">
-                          {isLogged ? `${meal.count} ${meal.count === 1 ? "dish" : "dishes"}` : "Unlogged"}
-                        </span>
-                      </div>
-                    </div>
+            <CardContent className="pt-1 flex-1 flex flex-col justify-between space-y-2">
+              <div className="space-y-1.5">
+                {visibleMeals.map((meal) => {
+                  const isLogged = meal.count > 0
 
-                    <div className="text-right">
-                      {isLogged ? (
-                        <span className="text-xs font-semibold text-[#CCD0CF] tabular-nums font-mono">
-                          {Math.round(meal.calories)} <span className="text-[10px] text-[#9BA8AB]">kcal</span>
-                        </span>
-                      ) : (
-                        <Link
-                          href={`/journal?category=${meal.id}`}
-                          className="text-[11px] font-medium text-[#9BA8AB] hover:text-[#CCD0CF] px-2 py-0.5 rounded-md hover:bg-[#11212D] transition-colors"
+                  return (
+                    <div
+                      key={meal.id}
+                      className="flex items-center justify-between p-2.5 rounded-xl border border-[#253745]/40 bg-[#06141B]/30 hover:bg-[#06141B]/60 transition-colors"
+                    >
+                      <div className="flex items-center gap-2.5">
+                        <div
+                          className={`h-7 w-7 rounded-lg flex items-center justify-center text-xs font-medium ${
+                            isLogged
+                              ? "bg-emerald-500/15 text-emerald-400 border border-emerald-500/30"
+                              : "bg-[#11212D] text-[#9BA8AB] border border-[#253745]/50"
+                          }`}
                         >
-                          + Log
-                        </Link>
-                      )}
+                          {isLogged ? <CheckCircle2 className="h-3.5 w-3.5" /> : <Plus className="h-3.5 w-3.5" />}
+                        </div>
+                        <div>
+                          <span className="text-xs font-medium text-[#CCD0CF] block">
+                            {meal.label}
+                          </span>
+                          <span className="text-[10px] text-[#9BA8AB]">
+                            {isLogged ? `${meal.count} ${meal.count === 1 ? "dish" : "dishes"}` : "Not logged yet"}
+                          </span>
+                        </div>
+                      </div>
+
+                      <div className="text-right">
+                        {isLogged ? (
+                          <span className="text-xs font-semibold text-[#CCD0CF] tabular-nums font-mono">
+                            {Math.round(meal.calories)} <span className="text-[10px] text-[#9BA8AB]">kcal</span>
+                          </span>
+                        ) : (
+                          <Link
+                            href={`/journal?new=1&category=${meal.id}`}
+                            className="text-[11px] font-medium text-[#9BA8AB] hover:text-[#CCD0CF] px-2 py-0.5 rounded-md hover:bg-[#11212D] transition-colors"
+                          >
+                            + Log
+                          </Link>
+                        )}
+                      </div>
                     </div>
-                  </div>
-                )
-              })}
-            </div>
-          </CardContent>
-        </Card>
-      </div>
+                  )
+                })}
+              </div>
+
+              <div className="pt-1 flex items-center justify-between text-[11px] text-[#9BA8AB]">
+                <span>Having a snack?</span>
+                <Link
+                  href="/journal?new=1&category=evening_snack"
+                  className="font-medium text-[#CCD0CF] hover:underline"
+                >
+                  + Log snack
+                </Link>
+              </div>
+            </CardContent>
+          </Card>
+        </div>
+      )}
 
       {entries.length > 0 && (
         <Card>

@@ -596,10 +596,10 @@ export default function Scanner() {
             </div>
 
             <h3 className="text-sm sm:text-base font-semibold text-[#CCD0CF]">
-              Drag and drop meal photo here
+              Snap or upload your meal
             </h3>
             <p className="text-xs text-[#9BA8AB] mt-1 max-w-sm">
-              Supports JPEG, PNG, WEBP files up to 10MB.
+              Get instant calories &amp; macros from a plate photo or packaged food barcode.
             </p>
 
             <div className="flex flex-wrap items-center justify-center gap-2.5 mt-5">
@@ -607,19 +607,19 @@ export default function Scanner() {
                 variant="primary"
                 size="sm"
                 className="rounded-full shadow-md"
-                onClick={() => fileInputRef.current?.click()}
+                onClick={startCamera}
               >
-                <Upload className="h-3.5 w-3.5 mr-1.5" />
-                Browse Photo
+                <Camera className="h-3.5 w-3.5 mr-1.5" />
+                Use Camera
               </Button>
               <Button
                 variant="secondary"
                 size="sm"
                 className="rounded-full"
-                onClick={startCamera}
+                onClick={() => fileInputRef.current?.click()}
               >
-                <Camera className="h-3.5 w-3.5 mr-1.5" />
-                Use Camera
+                <Upload className="h-3.5 w-3.5 mr-1.5" />
+                Choose Photo
               </Button>
               <Button
                 variant="outline"
@@ -637,7 +637,7 @@ export default function Scanner() {
               <div className="mt-5 w-full max-w-md p-3.5 rounded-xl bg-[#06141B]/70 border border-[#253745] text-left space-y-2">
                 <label className="text-[11px] font-medium text-[#CCD0CF] flex items-center gap-1.5">
                   <ScanBarcode className="h-3.5 w-3.5 text-emerald-400" />
-                  Packaged Food Barcode (Open Food Facts • $0)
+                  Enter Packaged Food Barcode
                 </label>
                 <div className="flex gap-2">
                   <Input
@@ -756,12 +756,12 @@ export default function Scanner() {
 
                 <div className="mt-4">
                   <label className="text-[11px] font-medium text-[#9BA8AB] block mb-1">
-                    Dish Description (optional — improves accuracy &amp; fallback)
+                    Add dish name or notes (optional)
                   </label>
                   <Input
                     value={dishHint}
                     onChange={(e) => setDishHint(e.target.value)}
-                    placeholder="e.g. 2 rotis and dal tadka"
+                    placeholder="e.g. 2 rotis and dal tadka — helps estimate portions"
                     className="h-9 text-xs"
                   />
                 </div>
@@ -836,13 +836,13 @@ export default function Scanner() {
                 {analysisTier && (
                   <Badge variant="outline" className="text-[10px]">
                     {analysisTier === "tier1_db"
-                      ? "Tier 1 • Local IFCT DB"
+                      ? "Verified Food DB"
                       : analysisTier === "tier1_barcode" || analysisTier === "tier1_barcode_cache"
-                        ? "Tier 1 • Barcode DB"
+                        ? "Barcode Match"
                         : analysisTier === "tier2_on_device"
-                          ? "Tier 2 • On-Device AI"
+                          ? "Offline AI"
                           : analysisTier === "tier3_gemini"
-                            ? "Tier 3 • Gemini Vision"
+                            ? "AI Vision"
                             : "Manual Estimate"}
                   </Badge>
                 )}

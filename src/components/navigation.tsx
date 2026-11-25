@@ -21,12 +21,12 @@ import { cn } from "@/lib/utils"
 import { NutriMentorLogo } from "@/components/ui/logo"
 
 const NAV_ITEMS = [
-  { href: "/", label: "Dashboard", icon: LayoutDashboard },
+  { href: "/", label: "Home", icon: LayoutDashboard },
   { href: "/journal", label: "Food Journal", icon: List },
   { href: "/scanner", label: "Scan Food", icon: Camera },
   { href: "/planner", label: "Meal Planner", icon: UtensilsCrossed },
   { href: "/analytics", label: "Insights", icon: BarChart3 },
-  { href: "/profile", label: "Profile", icon: User },
+  { href: "/profile", label: "Goals & Profile", icon: User },
   { href: "/settings", label: "Settings", icon: Settings },
 ]
 
