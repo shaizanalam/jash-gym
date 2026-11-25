@@ -22,10 +22,12 @@ const config: CapacitorConfig = {
       }),
   android: {
     allowMixedContent: true,
+    backgroundColor: '#06141B',
   },
   plugins: {
     SystemBars: {
       insetsHandling: 'disable',
+      style: 'DARK',
     },
   },
 };

@@ -7,10 +7,7 @@ const geistSans = Geist({ subsets: ["latin"], variable: "--font-geist-sans" })
 const geistMono = Geist_Mono({ subsets: ["latin"], variable: "--font-geist-mono" })
 
 export const viewport: Viewport = {
-  themeColor: [
-    { media: "(prefers-color-scheme: light)", color: "#f7f9fa" },
-    { media: "(prefers-color-scheme: dark)", color: "#06141B" },
-  ],
+  themeColor: "#06141B",
   width: "device-width",
   initialScale: 1,
   viewportFit: "cover",

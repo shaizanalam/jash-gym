@@ -52,7 +52,8 @@ export interface SettingsInitialData {
 const serverSnapshot = () => -1
 
 export function SettingsView({ initialData }: { initialData?: SettingsInitialData }) {
-  const { data: session } = useAppSession()
+  const router = useRouter()
+  const { data: session, signOutUser } = useAppSession()
   const userId = session?.user?.id
   const storeVersion = React.useSyncExternalStore(
     subscribeLocalStore,
@@ -145,6 +146,13 @@ export function SettingsView({ initialData }: { initialData?: SettingsInitialDat
     setTimeout(() => setSavedKeyNotice(false), 3000)
   }
 
+  const handleLogout = async () => {
+    await signOutUser()
+    if (localMode) {
+      router.replace("/login")
+    }
+  }
+
   return (
     <div className="flex-1 p-4 sm:p-6 lg:p-8 max-w-2xl mx-auto space-y-6 w-full">
       <div className="pb-1 border-b border-[#253745]/40">
@@ -195,6 +203,17 @@ export function SettingsView({ initialData }: { initialData?: SettingsInitialDat
             <span>
               All your meal logs, nutritional parameters, and profile details are encrypted and strictly isolated to your account.
             </span>
+          </div>
+
+          <div className="pt-3 border-t border-[#253745]/30">
+            <button
+              type="button"
+              onClick={handleLogout}
+              className="flex w-full min-h-[44px] touch-manipulation items-center justify-center gap-2 px-3 py-2.5 rounded-xl text-xs font-medium text-rose-400 bg-rose-500/10 hover:bg-rose-500/20 border border-rose-500/20 transition-colors cursor-pointer"
+            >
+              <LogOut className="h-3.5 w-3.5" />
+              Sign out
+            </button>
           </div>
         </div>
       </Card>
