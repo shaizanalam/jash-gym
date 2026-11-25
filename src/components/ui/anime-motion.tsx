@@ -35,7 +35,8 @@ export function SmoothPageTransition({
   const prevPathRef = React.useRef<string | null>(null)
 
   React.useEffect(() => {
-    if (!containerRef.current) return
+    const el = containerRef.current
+    if (!el) return
 
     const prevPath = prevPathRef.current
     let initialX = 0
@@ -46,38 +47,59 @@ export function SmoothPageTransition({
 
       if (currIdx > prevIdx) {
         // Switching to a tab to the right -> slide in from right to left
-        initialX = 42
+        initialX = 32
       } else if (currIdx < prevIdx) {
         // Switching to a tab to the left -> slide in from left to right
-        initialX = -42
-      } else {
-        initialX = 0
+        initialX = -32
       }
     }
 
     prevPathRef.current = pathname
 
-    // Cancel any in-flight animation on the container
+    if (
+      typeof window !== "undefined" &&
+      window.matchMedia?.("(prefers-reduced-motion: reduce)")?.matches
+    ) {
+      el.style.transform = ""
+      el.style.opacity = ""
+      el.style.willChange = ""
+      return
+    }
+
+    const clearStyles = () => {
+      el.style.transform = ""
+      el.style.opacity = ""
+      el.style.willChange = ""
+    }
+
+    el.style.willChange = "transform, opacity"
+
+    let anim: ReturnType<typeof animate> | null = null
     try {
-      animate(containerRef.current, {
+      anim = animate(el, {
         opacity: [0, 1],
         translateX: [initialX, 0],
-        translateY: [initialX === 0 ? 8 : 0, 0],
-        scale: [0.99, 1],
+        translateY: [initialX === 0 ? 6 : 0, 0],
         ease: "outCubic",
-        duration: 320,
+        duration: 240,
+        onComplete: clearStyles,
       })
-    } catch (e) {
-      // Fallback
+    } catch {
+      clearStyles()
+    }
+
+    return () => {
+      try {
+        anim?.cancel?.()
+      } catch {
+        // Ignore cleanup cancellation errors
+      }
+      clearStyles()
     }
   }, [pathname])
 
   return (
-    <div
-      ref={containerRef}
-      className={className}
-      style={{ willChange: "transform, opacity" }}
-    >
+    <div ref={containerRef} className={className}>
       {children}
     </div>
   )
@@ -101,31 +123,64 @@ export function AnimeEntrance({
   const ref = React.useRef<HTMLDivElement>(null)
 
   React.useEffect(() => {
-    if (!ref.current) return
+    const el = ref.current
+    if (!el) return
 
-    if (staggerChildren && ref.current.children.length > 0) {
-      animate(Array.from(ref.current.children), {
-        opacity: [0, 1],
-        translateY: [16, 0],
-        scale: [0.98, 1],
-        ease: "outQuart",
-        duration: 400,
-        delay: stagger(50, { start: delay }),
-      })
-    } else {
-      animate(ref.current, {
-        opacity: [0, 1],
-        translateY: [20, 0],
-        scale: [0.98, 1],
-        ease: "outCubic",
-        duration: 400,
-        delay,
-      })
+    if (
+      typeof window !== "undefined" &&
+      window.matchMedia?.("(prefers-reduced-motion: reduce)")?.matches
+    ) {
+      return
+    }
+
+    const clearTarget = (target: HTMLElement) => {
+      target.style.transform = ""
+      target.style.opacity = ""
+      target.style.willChange = ""
+    }
+
+    let anim: ReturnType<typeof animate> | null = null
+    try {
+      if (staggerChildren && el.children.length > 0) {
+        const targets = Array.from(el.children) as HTMLElement[]
+        targets.forEach((child) => {
+          child.style.willChange = "transform, opacity"
+        })
+        anim = animate(targets, {
+          opacity: [0, 1],
+          translateY: [14, 0],
+          ease: "outQuart",
+          duration: 320,
+          delay: stagger(45, { start: delay }),
+          onComplete: () => targets.forEach(clearTarget),
+        })
+      } else {
+        el.style.willChange = "transform, opacity"
+        anim = animate(el, {
+          opacity: [0, 1],
+          translateY: [16, 0],
+          ease: "outCubic",
+          duration: 320,
+          delay,
+          onComplete: () => clearTarget(el),
+        })
+      }
+    } catch {
+      clearTarget(el)
+    }
+
+    return () => {
+      try {
+        anim?.cancel?.()
+      } catch {
+        // Ignore cleanup cancellation errors
+      }
+      clearTarget(el)
     }
   }, [delay, staggerChildren])
 
   return (
-    <div ref={ref} className={className} style={{ willChange: "transform, opacity" }}>
+    <div ref={ref} className={className}>
       {children}
     </div>
   )

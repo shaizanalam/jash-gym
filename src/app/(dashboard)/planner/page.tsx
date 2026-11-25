@@ -30,6 +30,12 @@ import {
 } from "lucide-react"
 import { MEAL_CATEGORIES } from "@/lib/constants"
 import { cn } from "@/lib/utils"
+import {
+  apiCreateMealPlanItem,
+  apiDeleteMealPlanItem,
+  apiFetchMealPlans,
+  apiUpdateMealPlanItem,
+} from "@/lib/client-api"
 
 interface MealPlanItem {
   id: string
@@ -70,8 +76,7 @@ export default function PlannerPage() {
   async function loadItems() {
     setLoading(true)
     try {
-      const res = await fetch(`/api/meal-plans?date=${date}`)
-      const data = await res.json()
+      const data = await apiFetchMealPlans(date)
       const flat = (data as any[]).flatMap((plan: any) =>
         (plan.items || []).map((item: any) => ({ ...item, planId: plan.id }))
       )
@@ -90,13 +95,9 @@ export default function PlannerPage() {
     )
 
     try {
-      await fetch(`/api/meal-plan-items/${id}`, {
-        method: "PATCH",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({
-          isCompleted: completed,
-          completedAt: completed ? new Date().toISOString() : null,
-        }),
+      await apiUpdateMealPlanItem(id, {
+        isCompleted: completed,
+        completedAt: completed ? new Date().toISOString() : null,
       })
     } catch (e) {
       console.error(e)
@@ -119,18 +120,14 @@ export default function PlannerPage() {
     setSavingItem(true)
     try {
       const portionNum = newItemPortion ? parseInt(newItemPortion, 10) : null
-      await fetch("/api/meal-plan-items", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({
-          mealPlanId: date,
-          mealCategory: selectedCategory,
-          plannedTime: newItemTime || null,
-          foodName: newItemName.trim(),
-          portionG: isNaN(portionNum as number) ? null : portionNum,
-          isCompleted: false,
-          notes: "",
-        }),
+      await apiCreateMealPlanItem({
+        mealPlanId: date,
+        mealCategory: selectedCategory,
+        plannedTime: newItemTime || null,
+        foodName: newItemName.trim(),
+        portionG: isNaN(portionNum as number) ? null : portionNum,
+        isCompleted: false,
+        notes: "",
       })
       setModalOpen(false)
       loadItems()
@@ -144,7 +141,7 @@ export default function PlannerPage() {
   async function removeItem(id: string) {
     setItems((prev) => prev.filter((i) => i.id !== id))
     try {
-      await fetch(`/api/meal-plan-items/${id}`, { method: "DELETE" })
+      await apiDeleteMealPlanItem(id)
     } catch (e) {
       console.error(e)
       loadItems()
@@ -166,7 +163,7 @@ export default function PlannerPage() {
   const completionPct = totalCount > 0 ? Math.round((completedCount / totalCount) * 100) : 0
 
   return (
-    <div className="flex-1 overflow-y-auto p-4 sm:p-6 lg:p-8 space-y-5 max-w-5xl w-full mx-auto">
+    <div className="flex-1 p-4 sm:p-6 lg:p-8 space-y-5 max-w-5xl w-full mx-auto">
       {/* Header & Date Switcher */}
       <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3 pb-1 border-b border-[#253745]/40">
         <div>
@@ -367,7 +364,7 @@ export default function PlannerPage() {
                     <button
                       type="button"
                       onClick={() => removeItem(item.id)}
-                      className="p-1 text-[#9BA8AB] hover:text-rose-400 opacity-0 group-hover:opacity-100 transition-opacity ml-2 shrink-0"
+                      className="p-2 text-[#9BA8AB] hover:text-rose-400 opacity-75 sm:opacity-0 sm:group-hover:opacity-100 focus-visible:opacity-100 transition-opacity ml-2 shrink-0 touch-manipulation"
                       title="Remove dish"
                     >
                       <Trash2 className="h-3.5 w-3.5" />

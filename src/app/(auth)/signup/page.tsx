@@ -2,11 +2,12 @@
 
 import { useState, useEffect, useRef } from "react"
 import { useRouter } from "next/navigation"
-import { signIn } from "next-auth/react"
 import Link from "next/link"
 import { Eye, EyeOff } from "lucide-react"
 import { animate } from "animejs"
 import { NutriMentorLogo } from "@/components/ui/logo"
+import { useAppSession } from "@/components/providers"
+import { isLocalAppMode } from "@/lib/app-env"
 
 export default function SignupPage() {
   const [firstName, setFirstName] = useState("")
@@ -17,18 +18,45 @@ export default function SignupPage() {
   const [error, setError] = useState("")
   const [loading, setLoading] = useState(false)
   const router = useRouter()
+  const { registerUser, signInUser } = useAppSession()
 
   const cardRef = useRef<HTMLDivElement>(null)
 
   useEffect(() => {
-    if (!cardRef.current) return
-    animate(cardRef.current, {
-      opacity: [0, 1],
-      translateY: [28, 0],
-      scale: [0.96, 1],
-      ease: "outCubic",
-      duration: 520,
-    })
+    const el = cardRef.current
+    if (!el) return
+    if (
+      typeof window !== "undefined" &&
+      window.matchMedia?.("(prefers-reduced-motion: reduce)")?.matches
+    ) {
+      return
+    }
+    const clearStyles = () => {
+      el.style.transform = ""
+      el.style.opacity = ""
+      el.style.willChange = ""
+    }
+    el.style.willChange = "transform, opacity"
+    let anim: ReturnType<typeof animate> | null = null
+    try {
+      anim = animate(el, {
+        opacity: [0, 1],
+        translateY: [20, 0],
+        ease: "outCubic",
+        duration: 420,
+        onComplete: clearStyles,
+      })
+    } catch {
+      clearStyles()
+    }
+    return () => {
+      try {
+        anim?.cancel?.()
+      } catch {
+        // Ignore cleanup cancellation errors
+      }
+      clearStyles()
+    }
   }, [])
 
   const handleSubmit = async (e: React.FormEvent) => {
@@ -41,14 +69,9 @@ export default function SignupPage() {
     }
     setLoading(true)
     try {
-      const res = await fetch("/api/auth/register", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ action: "signup", name: fullName, email, password }),
-      })
-      const data = await res.json()
-      if (!res.ok) {
-        setError(data.error || "Signup failed")
+      const regRes = await registerUser(fullName, email, password)
+      if (!regRes.ok) {
+        setError(regRes.error || "Signup failed")
         setLoading(false)
         return
       }
@@ -56,16 +79,20 @@ export default function SignupPage() {
       // Automatically sign in upon registration
       const normalizedEmail = email.toLowerCase().trim()
       const rawPassword = password.trim()
-      const result = await signIn("credentials", {
-        email: normalizedEmail,
-        password: rawPassword,
-        redirect: false,
-      })
+      const result = await signInUser(normalizedEmail, rawPassword)
 
-      if (result?.error) {
-        window.location.href = "/login?registered=true"
+      if (isLocalAppMode()) {
+        if (!result.ok) {
+          router.replace("/login?registered=true")
+        } else {
+          router.replace("/")
+        }
       } else {
-        window.location.href = "/"
+        if (!result.ok) {
+          window.location.href = "/login?registered=true"
+        } else {
+          window.location.href = "/"
+        }
       }
     } catch (err) {
       setError("Signup failed. Please try again.")
@@ -74,10 +101,10 @@ export default function SignupPage() {
   }
 
   return (
-    <div className="min-h-screen flex items-center justify-center bg-[#06141B] p-4 sm:p-6">
+    <div className="min-h-dvh flex items-center justify-center bg-[#06141B] px-4 py-8 sm:p-6">
       <div
         ref={cardRef}
-        className="w-full max-w-[380px] overflow-hidden rounded-[32px] bg-[#0c1822] shadow-[0_25px_60px_-15px_rgba(0,0,0,0.8)] border border-[#253745]/70 flex flex-col will-change-transform relative"
+        className="w-full max-w-[380px] overflow-hidden rounded-[32px] bg-[#0c1822] shadow-[0_25px_60px_-15px_rgba(0,0,0,0.8)] border border-[#253745]/70 flex flex-col relative"
       >
         {/* Specular Metallic Top Header */}
         <div className="relative pt-10 pb-7 px-8 bg-gradient-to-b from-[#4A5C6A]/50 via-[#253745]/30 to-transparent overflow-hidden text-center rounded-t-[32px] flex flex-col items-center">

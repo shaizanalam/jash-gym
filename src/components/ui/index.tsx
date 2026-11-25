@@ -1,4 +1,7 @@
+"use client"
+
 import * as React from "react"
+import { createPortal } from "react-dom"
 import { clsx, type ClassValue } from "clsx"
 import { X } from "lucide-react"
 
@@ -7,6 +10,8 @@ export function cn(...inputs: ClassValue[]) {
 }
 
 export { LiquidGlassCard, LiquidGlassButton } from "./liquid-glass"
+export { AiButton } from "./ai-button"
+export { HamsterLoader } from "./hamster-loader"
 export { SmoothPageTransition, AnimeEntrance } from "./anime-motion"
 
 // Premium Button component with 150-200ms transitions and tactile response
@@ -55,7 +60,7 @@ export function Button({
   }
 
   const combinedClasses = cn(
-    "inline-flex items-center justify-center gap-2 transition-all duration-150 ease-out",
+    "inline-flex items-center justify-center gap-2 transition-all duration-150 ease-out touch-manipulation",
     "focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#4A5C6A] focus-visible:ring-offset-1 focus-visible:ring-offset-[#06141B]",
     "disabled:opacity-40 disabled:pointer-events-none cursor-pointer select-none",
     variants[variant] || variants.default,
@@ -97,7 +102,7 @@ export function Card({
         "relative overflow-hidden",
         glass
           ? "liquid-glass rounded-2xl border border-[#253745]/70 shadow-[0_8px_30px_rgba(6,20,27,0.5)]"
-          : "rounded-2xl bg-[#0f1b24]/90 backdrop-blur-xl text-[#CCD0CF] border border-[#253745]/50 shadow-xs",
+          : "rounded-2xl bg-[#0f1b24]/95 text-[#CCD0CF] border border-[#253745]/50 shadow-xs",
         hoverable && "liquid-glass-hover transition-all duration-200 hover:border-[#4A5C6A]/70 cursor-pointer",
         className
       )}
@@ -325,7 +330,7 @@ export function Switch({
       aria-checked={checked}
       onClick={() => onCheckedChange?.(!checked)}
       className={cn(
-        "peer inline-flex h-5 w-9 shrink-0 cursor-pointer items-center rounded-full border border-transparent transition-colors focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-[#4A5C6A] disabled:pointer-events-none disabled:opacity-50",
+        "peer inline-flex h-5 w-9 shrink-0 cursor-pointer touch-manipulation items-center rounded-full border border-transparent transition-colors focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-[#4A5C6A] disabled:pointer-events-none disabled:opacity-50",
         checked ? "bg-[#253745]" : "bg-[#11212D]",
         className
       )}
@@ -404,17 +409,17 @@ export function BottomSheet({
     }
   }, [isOpen])
 
-  if (!isOpen) return null
+  if (!isOpen || typeof document === "undefined") return null
 
-  return (
+  return createPortal(
     <div className="fixed inset-0 z-50 flex items-end sm:items-center justify-center p-0 sm:p-4">
       <div
-        className="fixed inset-0 bg-black/75 backdrop-blur-xs transition-opacity duration-150"
+        className="fixed inset-0 bg-black/75 backdrop-blur-xs transition-opacity duration-150 touch-none"
         onClick={onClose}
       />
       <div
         className={cn(
-          "relative z-50 w-full max-w-lg bg-[#0f1b24] border border-[#253745] rounded-t-[24px] sm:rounded-2xl shadow-2xl max-h-[85vh] flex flex-col overflow-hidden animate-in fade-in slide-in-from-bottom-3 duration-200",
+          "relative z-50 w-full max-w-lg bg-[#0f1b24] border border-[#253745] rounded-t-[24px] sm:rounded-2xl shadow-2xl max-h-[85dvh] flex flex-col overflow-hidden animate-sheet-slide-up",
           className
         )}
       >
@@ -424,15 +429,20 @@ export function BottomSheet({
             {subtitle && <p className="text-xs text-[#9BA8AB] mt-0.5">{subtitle}</p>}
           </div>
           <button
+            type="button"
             onClick={onClose}
-            className="p-1.5 rounded-lg text-[#9BA8AB] hover:text-[#CCD0CF] hover:bg-[#11212D] transition-colors"
+            aria-label="Close"
+            className="p-2 min-h-[40px] min-w-[40px] flex items-center justify-center rounded-lg text-[#9BA8AB] hover:text-[#CCD0CF] hover:bg-[#11212D] transition-colors touch-manipulation"
           >
             <X className="h-4 w-4" />
           </button>
         </div>
-        <div className="p-5 overflow-y-auto">{children}</div>
+        <div className="p-5 pb-[max(1.25rem,var(--safe-area-inset-bottom,env(safe-area-inset-bottom,0px)))] flex-1 min-h-0 overflow-y-auto ios-scroll">
+          {children}
+        </div>
       </div>
-    </div>
+    </div>,
+    document.body
   )
 }
 

@@ -23,10 +23,23 @@ export const DIETARY_PREFERENCES = [
 ] as const
 
 export const ACTIVITY_LEVELS = [
-  { id: "sedentary", label: "Sedentary (little or no exercise)" },
+  { id: "sedentary", label: "Sedentary (desk work, minimal exercise)" },
   { id: "lightly_active", label: "Lightly Active (light exercise 1-3 days/week)" },
-  { id: "moderately_active", label: "Moderately Active (moderate exercise 3-5 days/week)" },
-  { id: "very_active", label: "Very Active (hard exercise 6-7 days/week)" },
+  { id: "moderately_active", label: "Moderately Active (exercise 3-5 days/week)" },
+  { id: "very_active", label: "Very Active (hard training or physical labor)" },
+] as const
+
+export const FITNESS_GOALS = [
+  { id: "fat_loss", label: "Fat Loss (−400 kcal)" },
+  { id: "lean_recomp", label: "Lean Recomp (−150 kcal)" },
+  { id: "maintain", label: "Maintain Weight" },
+  { id: "muscle_gain", label: "Muscle Gain (+300 kcal)" },
+] as const
+
+export const GENDERS = [
+  { id: "male", label: "Male" },
+  { id: "female", label: "Female" },
+  { id: "other", label: "Other / Prefer not to say" },
 ] as const
 
 export const FOOD_CATEGORIES = [

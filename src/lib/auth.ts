@@ -40,33 +40,6 @@ export const { handlers, auth, signIn, signOut } = NextAuth({
         const normalizedEmail = String(credentials.email).toLowerCase().trim()
         const rawPassword = String(credentials.password).trim()
 
-        // Guaranteed instant access for demo credentials across all environments
-        if (normalizedEmail === "demo@nutrimentor.com" && rawPassword === "password123") {
-          try {
-            const user = await prisma.user.findUnique({
-              where: { email: "demo@nutrimentor.com" },
-            })
-            if (user) {
-              return {
-                id: user.id,
-                email: user.email,
-                name: user.name || "Demo User",
-                image: user.image || null,
-              }
-            }
-          } catch (e) {
-            console.warn("[Auth] Demo user lookup error:", e)
-          }
-
-          // Stable fallback with matching database UUID
-          return {
-            id: "fbcc7c6d-515d-4803-b907-7fab07656ff3",
-            email: "demo@nutrimentor.com",
-            name: "Demo User",
-            image: null,
-          }
-        }
-
         try {
           const user = await prisma.user.findUnique({
             where: { email: normalizedEmail },
@@ -99,11 +72,14 @@ export const { handlers, auth, signIn, signOut } = NextAuth({
     }),
   ],
   callbacks: {
-    async jwt({ token, user }) {
+    async jwt({ token, user, trigger, session }) {
       if (user) {
         token.id = user.id
         token.email = user.email
         token.name = user.name
+      }
+      if (trigger === "update" && typeof session?.name === "string" && session.name.trim()) {
+        token.name = session.name.trim()
       }
       return token
     },

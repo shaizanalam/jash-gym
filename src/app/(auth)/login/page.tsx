@@ -1,16 +1,18 @@
 "use client"
 
 import { useState, Suspense, useEffect, useRef } from "react"
-import { signIn } from "next-auth/react"
 import { useRouter, useSearchParams } from "next/navigation"
 import Link from "next/link"
 import { Eye, EyeOff } from "lucide-react"
 import { animate } from "animejs"
 import { NutriMentorLogo } from "@/components/ui/logo"
+import { useAppSession } from "@/components/providers"
+import { isLocalAppMode } from "@/lib/app-env"
 
 function LoginForm() {
   const router = useRouter()
   const searchParams = useSearchParams()
+  const { signInUser } = useAppSession()
   const registered = searchParams.get("registered")
   const urlError = searchParams.get("error")
 
@@ -30,14 +32,40 @@ function LoginForm() {
   const cardRef = useRef<HTMLDivElement>(null)
 
   useEffect(() => {
-    if (!cardRef.current) return
-    animate(cardRef.current, {
-      opacity: [0, 1],
-      translateY: [28, 0],
-      scale: [0.96, 1],
-      ease: "outCubic",
-      duration: 520,
-    })
+    const el = cardRef.current
+    if (!el) return
+    if (
+      typeof window !== "undefined" &&
+      window.matchMedia?.("(prefers-reduced-motion: reduce)")?.matches
+    ) {
+      return
+    }
+    const clearStyles = () => {
+      el.style.transform = ""
+      el.style.opacity = ""
+      el.style.willChange = ""
+    }
+    el.style.willChange = "transform, opacity"
+    let anim: ReturnType<typeof animate> | null = null
+    try {
+      anim = animate(el, {
+        opacity: [0, 1],
+        translateY: [20, 0],
+        ease: "outCubic",
+        duration: 420,
+        onComplete: clearStyles,
+      })
+    } catch {
+      clearStyles()
+    }
+    return () => {
+      try {
+        anim?.cancel?.()
+      } catch {
+        // Ignore cleanup cancellation errors
+      }
+      clearStyles()
+    }
   }, [])
 
   const handleSubmit = async (e: React.FormEvent) => {
@@ -50,20 +78,20 @@ function LoginForm() {
       const normalizedEmail = email.toLowerCase().trim()
       const rawPassword = password.trim()
 
-      const result = await signIn("credentials", {
-        email: normalizedEmail,
-        password: rawPassword,
-        redirect: false,
-      })
+      const result = await signInUser(normalizedEmail, rawPassword)
 
-      if (result?.error) {
+      if (!result.ok) {
         setError("Invalid email or password. If you haven't created an account yet, please sign up first.")
         setLoading(false)
         return
       }
 
-      // Hard redirect ensures session cookie is flushed and picked up by server layout
-      window.location.href = "/"
+      if (isLocalAppMode()) {
+        router.replace("/")
+      } else {
+        // Hard redirect ensures session cookie is flushed and picked up by server layout
+        window.location.href = "/"
+      }
     } catch (err) {
       console.error("[Login] submit error:", err)
       setError("Login failed. Please try again.")
@@ -71,16 +99,10 @@ function LoginForm() {
     }
   }
 
-  const handleFillDemo = () => {
-    setEmail("demo@nutrimentor.com")
-    setPassword("password123")
-    setError("")
-  }
-
   return (
     <div
       ref={cardRef}
-      className="w-full max-w-[380px] overflow-hidden rounded-[32px] bg-[#0c1822] shadow-[0_25px_60px_-15px_rgba(0,0,0,0.8)] border border-[#253745]/70 flex flex-col will-change-transform relative"
+      className="w-full max-w-[380px] overflow-hidden rounded-[32px] bg-[#0c1822] shadow-[0_25px_60px_-15px_rgba(0,0,0,0.8)] border border-[#253745]/70 flex flex-col relative"
     >
       {/* Specular Metallic Top Header */}
       <div className="relative pt-10 pb-7 px-8 bg-gradient-to-b from-[#4A5C6A]/50 via-[#253745]/30 to-transparent overflow-hidden text-center rounded-t-[32px] flex flex-col items-center">
@@ -153,20 +175,11 @@ function LoginForm() {
           >
             {loading ? "Signing in..." : "Log in"}
           </button>
-
-          {/* Quick Demo Fill button */}
-          <button
-            type="button"
-            onClick={handleFillDemo}
-            className="w-full h-9 rounded-full bg-[#182C3D]/60 hover:bg-[#253745]/70 text-[#9BA8AB] hover:text-[#CCD0CF] text-xs font-medium border border-[#253745]/60 transition-all flex items-center justify-center cursor-pointer"
-          >
-            Fill Demo Account (demo@nutrimentor.com)
-          </button>
         </form>
 
         {/* Footer Link */}
         <div className="mt-6 text-center text-xs text-[#9BA8AB]">
-          Don't have an account?{" "}
+          Don&apos;t have an account?{" "}
           <Link
             href="/signup"
             className="text-[#CCD0CF] font-semibold underline underline-offset-2 ml-1"
@@ -181,7 +194,7 @@ function LoginForm() {
 
 export default function LoginPage() {
   return (
-    <div className="min-h-screen flex items-center justify-center bg-[#06141B] p-4 sm:p-6">
+    <div className="min-h-dvh flex items-center justify-center bg-[#06141B] px-4 py-8 sm:p-6">
       <Suspense
         fallback={
           <div className="w-full max-w-[380px] h-[520px] bg-white dark:bg-[#11212D] rounded-[36px] shadow-xl animate-pulse" />

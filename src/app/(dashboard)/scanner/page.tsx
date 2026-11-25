@@ -10,14 +10,40 @@ import {
   Loader2,
   Sparkles,
   Info,
-  ArrowLeft,
   Check,
-  CheckCircle2,
   Trash2,
   Plus,
+  ScanBarcode,
+  Search,
 } from "lucide-react"
-import { Button, Card, CardContent, CardHeader, CardTitle, CardDescription, Badge, Input } from "@/components/ui/index"
+import { Button, Card, Badge, Input, HamsterLoader } from "@/components/ui/index"
 import { MEAL_CATEGORIES } from "@/lib/constants"
+import { apiAnalyzeFood, apiCreateFoodEntries } from "@/lib/client-api"
+import { isNativeAndroidRuntime } from "@/lib/on-device-ai"
+
+function createCompactThumbnail(
+  dataUrl: string,
+  maxDim = 240,
+  quality = 0.72
+): Promise<string> {
+  return new Promise((resolve) => {
+    const img = new Image()
+    img.onload = () => {
+      const scale = Math.min(1, maxDim / Math.max(img.width, img.height))
+      const w = Math.max(1, Math.round(img.width * scale))
+      const h = Math.max(1, Math.round(img.height * scale))
+      const canvas = document.createElement("canvas")
+      canvas.width = w
+      canvas.height = h
+      const ctx = canvas.getContext("2d")
+      if (!ctx) return resolve(dataUrl)
+      ctx.drawImage(img, 0, 0, w, h)
+      resolve(canvas.toDataURL("image/jpeg", quality))
+    }
+    img.onerror = () => resolve(dataUrl)
+    img.src = dataUrl
+  })
+}
 
 interface AnalyzedItem {
   id?: string
@@ -38,14 +64,95 @@ interface AnalyzedItem {
   baseFat?: number
 }
 
+interface RawAnalyzedItem {
+  foodName?: string
+  estimatedPortionG?: number
+  calories?: number
+  proteinG?: number
+  carbsG?: number
+  fatG?: number
+  fibreG?: number
+  confidence?: string
+  notes?: string
+}
+
+function mapRawToAnalyzedItem(
+  it: RawAnalyzedItem,
+  defaults: {
+    foodName: string
+    portionG: number
+    calories: number
+    proteinG: number
+    carbsG: number
+    fatG: number
+    fibreG: number
+    confidence: string
+    mealCategory: string
+  }
+): AnalyzedItem {
+  const portion = it.estimatedPortionG || defaults.portionG
+  const calories = typeof it.calories === "number" ? it.calories : defaults.calories
+  const proteinG = typeof it.proteinG === "number" ? it.proteinG : defaults.proteinG
+  const carbsG = typeof it.carbsG === "number" ? it.carbsG : defaults.carbsG
+  const fatG = typeof it.fatG === "number" ? it.fatG : defaults.fatG
+  return {
+    foodName: it.foodName || defaults.foodName,
+    estimatedPortionG: portion,
+    calories,
+    proteinG,
+    carbsG,
+    fatG,
+    fibreG: typeof it.fibreG === "number" ? it.fibreG : defaults.fibreG,
+    confidence: it.confidence || defaults.confidence,
+    notes: it.notes || "",
+    mealCategory: defaults.mealCategory,
+    basePortion: portion,
+    baseCalories: calories,
+    baseProtein: proteinG,
+    baseCarbs: carbsG,
+    baseFat: fatG,
+  }
+}
+
+function getErrorMessage(err: unknown, fallback: string): string {
+  return err instanceof Error && err.message ? err.message : fallback
+}
+
+function AnalyzingOverlay({
+  title,
+  subtitle,
+}: {
+  title: string
+  subtitle: string
+}) {
+  return (
+    <div
+      role="status"
+      aria-live="polite"
+      className="absolute inset-0 z-20 flex flex-col items-center justify-center gap-3 bg-[#06141B]/88 backdrop-blur-md p-6 text-center"
+    >
+      <HamsterLoader />
+      <div className="space-y-1">
+        <p className="text-sm font-semibold text-[#CCD0CF]">{title}</p>
+        <p className="text-xs text-[#9BA8AB]">{subtitle}</p>
+      </div>
+    </div>
+  )
+}
+
 export default function Scanner() {
   const router = useRouter()
   const [step, setStep] = useState<"upload" | "camera" | "preview" | "review">("upload")
   const [imageSrc, setImageSrc] = useState<string | null>(null)
+  const [dishHint, setDishHint] = useState("")
   const [items, setItems] = useState<AnalyzedItem[]>([])
   const [loading, setLoading] = useState(false)
   const [saving, setSaving] = useState(false)
   const [error, setError] = useState<string | null>(null)
+  const [reviewNotice, setReviewNotice] = useState<string | null>(null)
+  const [analysisTier, setAnalysisTier] = useState<string | null>(null)
+  const [showBarcodePanel, setShowBarcodePanel] = useState(false)
+  const [barcodeInput, setBarcodeInput] = useState("")
   const [isDragging, setIsDragging] = useState(false)
 
   // Camera state
@@ -87,7 +194,7 @@ export default function Scanner() {
           videoRef.current.play().catch(() => {})
         }
       }, 50)
-    } catch (err) {
+    } catch {
       setError("Camera permission denied or camera not found. Please upload a photo instead.")
       setStep("upload")
     }
@@ -142,72 +249,186 @@ export default function Scanner() {
     if (file) handleFile(file)
   }
 
-  const analyzeMeal = async () => {
-    if (!imageSrc) return
+  const runAnalysis = async (useTextOnly = false) => {
+    if (!useTextOnly && !imageSrc && !dishHint.trim()) return
+    if (useTextOnly && !dishHint.trim()) return
     setLoading(true)
     setError(null)
+    setReviewNotice(null)
+    setAnalysisTier(null)
     try {
-      const res = await fetch("/api/ai/analyze", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ imageUrl: imageSrc }),
+      const preparedImage =
+        !useTextOnly && imageSrc ? await createCompactThumbnail(imageSrc, 1024, 0.84) : undefined
+      const data = await apiAnalyzeFood({
+        imageUrl: preparedImage,
+        textPrompt: dishHint.trim() || undefined,
       })
-      const data = await res.json()
       if (data.error) {
         setError(data.error)
         setLoading(false)
         return
       }
 
-      const analyzedItems: AnalyzedItem[] = (data.items || []).map((it: any) => ({
-        foodName: it.foodName || "Meal Item",
-        estimatedPortionG: it.estimatedPortionG || 150,
-        calories: it.calories || 200,
-        proteinG: it.proteinG || 10,
-        carbsG: it.carbsG || 25,
-        fatG: it.fatG || 6,
-        fibreG: it.fibreG || 2,
-        confidence: it.confidence || "approximate",
-        notes: it.notes || "",
-        mealCategory: "lunch",
-        basePortion: it.estimatedPortionG || 150,
-        baseCalories: it.calories || 200,
-        baseProtein: it.proteinG || 10,
-        baseCarbs: it.carbsG || 25,
-        baseFat: it.fatG || 6,
-      }))
+      if (typeof data.analysisTier === "string") {
+        setAnalysisTier(data.analysisTier)
+      }
+      if (data.uncertainty && data.requiresManualEntry) {
+        setReviewNotice(data.uncertainty)
+      }
+
+      const analyzedItems: AnalyzedItem[] = (data.items || []).map((it: RawAnalyzedItem) =>
+        mapRawToAnalyzedItem(it, {
+          foodName: "Meal Item",
+          portionG: 150,
+          calories: 200,
+          proteinG: 10,
+          carbsG: 25,
+          fatG: 6,
+          fibreG: 2,
+          confidence: "approximate",
+          mealCategory: "lunch",
+        })
+      )
 
       if (analyzedItems.length === 0) {
+        if (data.requiresManualEntry && data.uncertainty) {
+          setReviewNotice(data.uncertainty)
+        }
         analyzedItems.push({
-          foodName: "Identified Meal",
-          estimatedPortionG: 200,
-          calories: 320,
-          proteinG: 14,
-          carbsG: 40,
-          fatG: 10,
+          foodName: dishHint.trim() || "Meal Item",
+          estimatedPortionG: 150,
+          calories: 250,
+          proteinG: 10,
+          carbsG: 32,
+          fatG: 8,
           mealCategory: "lunch",
-          basePortion: 200,
-          baseCalories: 320,
-          baseProtein: 14,
-          baseCarbs: 40,
-          baseFat: 10,
+          basePortion: 150,
+          baseCalories: 250,
+          baseProtein: 10,
+          baseCarbs: 32,
+          baseFat: 8,
         })
       }
 
       setItems(analyzedItems)
       setStep("review")
-    } catch (err) {
-      setError("Failed to analyze image. Please verify your connection and try again.")
+    } catch (err: unknown) {
+      setError(
+        getErrorMessage(err, "Failed to analyze meal. Please verify your connection or edit items manually.")
+      )
     } finally {
       setLoading(false)
     }
   }
 
+  const analyzeMeal = () => runAnalysis(false)
+
+  const lookupBarcode = async (code: string) => {
+    const cleaned = code.replace(/[^0-9]/g, "").trim()
+    if (!cleaned) {
+      setError("Enter a valid numeric barcode (EAN-13 / UPC-A).")
+      return
+    }
+    setLoading(true)
+    setError(null)
+    setReviewNotice(null)
+    setAnalysisTier(null)
+    try {
+      const data = await apiAnalyzeFood({ barcode: cleaned })
+      if (data.error) {
+        setError(data.error)
+        return
+      }
+      if (typeof data.analysisTier === "string") {
+        setAnalysisTier(data.analysisTier)
+      }
+      const mapped: AnalyzedItem[] = (data.items || []).map((it: RawAnalyzedItem) =>
+        mapRawToAnalyzedItem(it, {
+          foodName: `Packaged Item (${cleaned})`,
+          portionG: 100,
+          calories: 0,
+          proteinG: 0,
+          carbsG: 0,
+          fatG: 0,
+          fibreG: 0,
+          confidence: "high",
+          mealCategory: "evening_snack",
+        })
+      )
+      if (mapped.length === 0) {
+        setError(`No nutrition details found for barcode ${cleaned}.`)
+        return
+      }
+      setItems(mapped)
+      setShowBarcodePanel(false)
+      setStep("review")
+    } catch (err: unknown) {
+      setError(getErrorMessage(err, "Failed to look up barcode."))
+    } finally {
+      setLoading(false)
+    }
+  }
+
+  const startBarcodeScan = async () => {
+    setError(null)
+    if (isNativeAndroidRuntime()) {
+      try {
+        const { BarcodeScanner } = await import("@capacitor-mlkit/barcode-scanning")
+        const perm = await BarcodeScanner.requestPermissions()
+        if (perm.camera !== "granted" && perm.camera !== "limited") {
+          setError("Camera permission is required to scan product barcodes.")
+          setShowBarcodePanel(true)
+          return
+        }
+        const result = await BarcodeScanner.scan()
+        const rawCode = result.barcodes?.[0]?.rawValue
+        if (rawCode) {
+          setBarcodeInput(rawCode)
+          await lookupBarcode(rawCode)
+          return
+        }
+      } catch (err: unknown) {
+        console.warn("Native barcode scan fallback:", err)
+        setError(getErrorMessage(err, "Native barcode scanner unavailable; enter barcode manually below."))
+      }
+    }
+    setShowBarcodePanel((prev) => !prev)
+  }
+
+  const openManualReview = () => {
+    setError(null)
+    setReviewNotice(
+      "Manual review mode: customize dish names, portions, and macros below before saving."
+    )
+    setItems([
+      {
+        foodName: dishHint.trim() || "Meal Item",
+        estimatedPortionG: 150,
+        calories: 250,
+        proteinG: 10,
+        carbsG: 32,
+        fatG: 8,
+        mealCategory: "lunch",
+        basePortion: 150,
+        baseCalories: 250,
+        baseProtein: 10,
+        baseCarbs: 32,
+        baseFat: 8,
+      },
+    ])
+    setStep("review")
+  }
+
   const resetAll = () => {
     stopCamera()
     setImageSrc(null)
+    setDishHint("")
+    setBarcodeInput("")
+    setShowBarcodePanel(false)
+    setAnalysisTier(null)
     setItems([])
     setError(null)
+    setReviewNotice(null)
     setStep("upload")
   }
 
@@ -229,7 +450,11 @@ export default function Scanner() {
     )
   }
 
-  const handleFieldChange = (index: number, field: keyof AnalyzedItem, value: any) => {
+  const handleFieldChange = <K extends keyof AnalyzedItem>(
+    index: number,
+    field: K,
+    value: AnalyzedItem[K]
+  ) => {
     setItems((prev) =>
       prev.map((item, i) => (i === index ? { ...item, [field]: value } : item))
     )
@@ -258,20 +483,13 @@ export default function Scanner() {
         notes: it.notes || null,
       }))
 
-      const res = await fetch("/api/food-entries", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify(payload),
-      })
-
-      if (!res.ok) {
-        throw new Error("Failed to save meal entries")
-      }
+      const compactThumb = imageSrc ? await createCompactThumbnail(imageSrc) : null
+      await apiCreateFoodEntries(payload, compactThumb)
 
       router.push("/journal")
       router.refresh()
-    } catch (err: any) {
-      setError(err?.message || "Failed to save to journal. Please try again.")
+    } catch (err: unknown) {
+      setError(getErrorMessage(err, "Failed to save to journal. Please try again."))
       setSaving(false)
     }
   }
@@ -283,7 +501,7 @@ export default function Scanner() {
   const totalFat = items.reduce((s, it) => s + (it.fatG || 0), 0)
 
   return (
-    <div className="flex-1 overflow-y-auto p-4 sm:p-6 lg:p-8 max-w-4xl w-full mx-auto space-y-6">
+    <div className="flex-1 p-4 sm:p-6 lg:p-8 max-w-4xl w-full mx-auto space-y-6">
       {/* Workflow Header */}
       <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3 pb-1 border-b border-[#253745]/40">
         <div>
@@ -304,14 +522,53 @@ export default function Scanner() {
       </div>
 
       {error && (
-        <div className="p-3.5 rounded-xl bg-rose-500/10 border border-rose-500/25 text-rose-300 text-xs flex items-center justify-between gap-3">
-          <div className="flex items-center gap-2">
-            <Info className="h-4 w-4 shrink-0 text-rose-400" />
-            <span>{error}</span>
+        <div className="p-3.5 rounded-xl bg-rose-500/10 border border-rose-500/25 text-rose-300 text-xs space-y-2.5">
+          <div className="flex items-center justify-between gap-3">
+            <div className="flex items-center gap-2">
+              <Info className="h-4 w-4 shrink-0 text-rose-400" />
+              <span>{error}</span>
+            </div>
+            <button onClick={() => setError(null)} className="text-rose-400 hover:text-rose-200">
+              <X className="h-4 w-4" />
+            </button>
           </div>
-          <button onClick={() => setError(null)} className="text-rose-400 hover:text-rose-200">
-            <X className="h-4 w-4" />
-          </button>
+          {step === "preview" && (
+            <div className="flex flex-wrap items-center gap-2 pt-1">
+              <Button
+                type="button"
+                variant="secondary"
+                size="sm"
+                onClick={analyzeMeal}
+                disabled={loading}
+                className="text-xs rounded-full"
+              >
+                <RefreshCw className="h-3 w-3 mr-1" />
+                Retry Vision
+              </Button>
+              {dishHint.trim() && (
+                <Button
+                  type="button"
+                  variant="outline"
+                  size="sm"
+                  onClick={() => runAnalysis(true)}
+                  disabled={loading}
+                  className="text-xs rounded-full"
+                >
+                  <Sparkles className="h-3 w-3 mr-1" />
+                  Analyze Description
+                </Button>
+              )}
+              <Button
+                type="button"
+                variant="ghost"
+                size="sm"
+                onClick={openManualReview}
+                className="text-xs rounded-full"
+              >
+                Edit Items Manually
+              </Button>
+            </div>
+          )}
         </div>
       )}
 
@@ -322,12 +579,18 @@ export default function Scanner() {
             onDragOver={onDragOver}
             onDragLeave={onDragLeave}
             onDrop={onDrop}
-            className={`border-2 border-dashed rounded-2xl p-8 sm:p-12 text-center transition-all duration-150 flex flex-col items-center justify-center min-h-[260px] ${
+            className={`relative overflow-hidden border-2 border-dashed rounded-2xl p-8 sm:p-12 text-center transition-all duration-150 flex flex-col items-center justify-center min-h-[280px] ${
               isDragging
                 ? "border-[#CCD0CF] bg-[#182C3D]/50"
                 : "border-[#253745] bg-[#0f1b24] hover:border-[#4A5C6A]"
             }`}
           >
+            {loading && (
+              <AnalyzingOverlay
+                title="Looking up food nutrition..."
+                subtitle="Fetching product details and macronutrient breakdown"
+              />
+            )}
             <div className="h-12 w-12 rounded-xl bg-[#11212D] border border-[#253745] flex items-center justify-center text-[#CCD0CF] mb-4">
               <Upload className="h-6 w-6" />
             </div>
@@ -339,7 +602,7 @@ export default function Scanner() {
               Supports JPEG, PNG, WEBP files up to 10MB.
             </p>
 
-            <div className="flex items-center gap-2.5 mt-5">
+            <div className="flex flex-wrap items-center justify-center gap-2.5 mt-5">
               <Button
                 variant="primary"
                 size="sm"
@@ -358,7 +621,46 @@ export default function Scanner() {
                 <Camera className="h-3.5 w-3.5 mr-1.5" />
                 Use Camera
               </Button>
+              <Button
+                variant="outline"
+                size="sm"
+                className="rounded-full"
+                onClick={startBarcodeScan}
+                disabled={loading}
+              >
+                <ScanBarcode className="h-3.5 w-3.5 mr-1.5" />
+                Scan Barcode
+              </Button>
             </div>
+
+            {showBarcodePanel && (
+              <div className="mt-5 w-full max-w-md p-3.5 rounded-xl bg-[#06141B]/70 border border-[#253745] text-left space-y-2">
+                <label className="text-[11px] font-medium text-[#CCD0CF] flex items-center gap-1.5">
+                  <ScanBarcode className="h-3.5 w-3.5 text-emerald-400" />
+                  Packaged Food Barcode (Open Food Facts • $0)
+                </label>
+                <div className="flex gap-2">
+                  <Input
+                    value={barcodeInput}
+                    onChange={(e) => setBarcodeInput(e.target.value)}
+                    placeholder="Enter EAN-13 / UPC code (e.g. 8901058852421)"
+                    className="h-9 text-xs font-mono flex-1"
+                    inputMode="numeric"
+                  />
+                  <Button
+                    type="button"
+                    variant="secondary"
+                    size="sm"
+                    onClick={() => lookupBarcode(barcodeInput)}
+                    disabled={loading || !barcodeInput.trim()}
+                    className="rounded-xl shrink-0"
+                  >
+                    {loading ? <Loader2 className="h-3.5 w-3.5 animate-spin" /> : <Search className="h-3.5 w-3.5 mr-1" />}
+                    {loading ? "" : "Lookup"}
+                  </Button>
+                </div>
+              </div>
+            )}
 
             <input
               ref={fileInputRef}
@@ -419,7 +721,13 @@ export default function Scanner() {
       {/* Step 2: Image Preview & Analyze Action */}
       {step === "preview" && imageSrc && (
         <Card className="overflow-hidden">
-          <div className="grid grid-cols-1 md:grid-cols-12 gap-0">
+          <div className="relative grid grid-cols-1 md:grid-cols-12 gap-0">
+            {loading && (
+              <AnalyzingOverlay
+                title="Analyzing your meal..."
+                subtitle="Identifying dishes, portions, and macronutrients"
+              />
+            )}
             <div className="md:col-span-6 relative aspect-video md:aspect-square bg-[#06141B]">
               <img src={imageSrc} alt="Preview" className="w-full h-full object-cover" />
               <button
@@ -445,6 +753,18 @@ export default function Scanner() {
                 <p className="text-xs text-[#9BA8AB] mt-1.5 leading-relaxed">
                   Our nutritional intelligence will detect dishes, estimate portion sizes, and calculate macronutrients. You will be able to review and adjust portions before saving.
                 </p>
+
+                <div className="mt-4">
+                  <label className="text-[11px] font-medium text-[#9BA8AB] block mb-1">
+                    Dish Description (optional — improves accuracy &amp; fallback)
+                  </label>
+                  <Input
+                    value={dishHint}
+                    onChange={(e) => setDishHint(e.target.value)}
+                    placeholder="e.g. 2 rotis and dal tadka"
+                    className="h-9 text-xs"
+                  />
+                </div>
               </div>
 
               <div className="space-y-2 pt-4 border-t border-[#253745]/40">
@@ -494,6 +814,13 @@ export default function Scanner() {
       {/* Step 3: Review Nutrition & Adjust Portions */}
       {step === "review" && (
         <div className="space-y-5">
+          {reviewNotice && (
+            <div className="p-3 rounded-xl bg-amber-500/10 border border-amber-500/25 text-amber-300 text-xs flex items-start gap-2">
+              <Info className="h-4 w-4 shrink-0 mt-0.5 text-amber-400" />
+              <span>{reviewNotice}</span>
+            </div>
+          )}
+
           {/* Summary Rollup Bar */}
           <Card className="p-4 bg-[#09131a] border border-[#253745]/70">
             <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 pb-3 border-b border-[#253745]/40">
@@ -505,9 +832,24 @@ export default function Scanner() {
                   Calculated from {items.length} detected item{items.length === 1 ? "" : "s"}
                 </p>
               </div>
-              <Badge variant="success" className="self-start sm:self-auto text-[10px]">
-                Editable Before Saving
-              </Badge>
+              <div className="flex flex-wrap items-center gap-1.5 self-start sm:self-auto">
+                {analysisTier && (
+                  <Badge variant="outline" className="text-[10px]">
+                    {analysisTier === "tier1_db"
+                      ? "Tier 1 • Local IFCT DB"
+                      : analysisTier === "tier1_barcode" || analysisTier === "tier1_barcode_cache"
+                        ? "Tier 1 • Barcode DB"
+                        : analysisTier === "tier2_on_device"
+                          ? "Tier 2 • On-Device AI"
+                          : analysisTier === "tier3_gemini"
+                            ? "Tier 3 • Gemini Vision"
+                            : "Manual Estimate"}
+                  </Badge>
+                )}
+                <Badge variant="success" className="text-[10px]">
+                  Editable Before Saving
+                </Badge>
+              </div>
             </div>
 
             <div className="grid grid-cols-4 gap-2 pt-3 text-center">

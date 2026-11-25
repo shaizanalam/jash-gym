@@ -29,8 +29,8 @@ export function LiquidGlassCard({
   const [mousePos, setMousePos] = useState({ x: 50, y: 50 })
   const [isHovered, setIsHovered] = useState(false)
 
-  const handleMouseMove = useCallback((e: React.MouseEvent<HTMLDivElement>) => {
-    if (!cardRef.current) return
+  const handlePointerMove = useCallback((e: React.PointerEvent<HTMLDivElement>) => {
+    if (e.pointerType !== "mouse" || !cardRef.current) return
     const rect = cardRef.current.getBoundingClientRect()
     const x = ((e.clientX - rect.left) / rect.width) * 100
     const y = ((e.clientY - rect.top) / rect.height) * 100
@@ -40,9 +40,9 @@ export function LiquidGlassCard({
   return (
     <div
       ref={cardRef}
-      onMouseMove={interactive ? handleMouseMove : undefined}
-      onMouseEnter={interactive ? () => setIsHovered(true) : undefined}
-      onMouseLeave={interactive ? () => setIsHovered(false) : undefined}
+      onPointerMove={interactive ? handlePointerMove : undefined}
+      onPointerEnter={interactive ? (e) => { if (e.pointerType === "mouse") setIsHovered(true) } : undefined}
+      onPointerLeave={interactive ? () => setIsHovered(false) : undefined}
       style={
         {
           "--mouse-x": `${mousePos.x}%`,
@@ -95,8 +95,8 @@ export function LiquidGlassButton({
   const btnRef = useRef<HTMLButtonElement>(null)
   const [pos, setPos] = useState({ x: 50, y: 50 })
 
-  const handleMouseMove = (e: React.MouseEvent<HTMLButtonElement>) => {
-    if (!btnRef.current) return
+  const handlePointerMove = (e: React.PointerEvent<HTMLButtonElement>) => {
+    if (e.pointerType !== "mouse" || !btnRef.current) return
     const rect = btnRef.current.getBoundingClientRect()
     setPos({
       x: ((e.clientX - rect.left) / rect.width) * 100,
@@ -124,7 +124,7 @@ export function LiquidGlassButton({
   return (
     <button
       ref={btnRef}
-      onMouseMove={handleMouseMove}
+      onPointerMove={handlePointerMove}
       style={
         {
           "--mouse-x": `${pos.x}%`,

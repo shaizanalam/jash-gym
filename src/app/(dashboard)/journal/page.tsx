@@ -11,6 +11,7 @@ import {
   Button,
   Input,
   Badge,
+  Progress,
 } from "@/components/ui/index"
 import {
   Calendar,
@@ -27,8 +28,18 @@ import {
   Loader2,
   Info,
   Clock,
+  SlidersHorizontal,
 } from "lucide-react"
 import { MEAL_CATEGORIES } from "@/lib/constants"
+import { resolveNutritionTargets, type ResolvedNutritionTargets } from "@/lib/nutrition-targets"
+import {
+  apiAnalyzeFood,
+  apiCreateFoodEntries,
+  apiDeleteFoodEntry,
+  apiFetchFoodEntries,
+  apiFetchProfile,
+  apiUpdateFoodEntry,
+} from "@/lib/client-api"
 import Link from "next/link"
 
 interface FoodEntry {
@@ -60,6 +71,9 @@ const COMMON_PRESETS = [
 
 export default function JournalPage() {
   const [entries, setEntries] = useState<FoodEntry[]>([])
+  const [targets, setTargets] = useState<ResolvedNutritionTargets>(() =>
+    resolveNutritionTargets(null)
+  )
   const [loading, setLoading] = useState(true)
   const [filter, setFilter] = useState<string>("all")
   const [date, setDate] = useState<string>("")
@@ -83,17 +97,25 @@ export default function JournalPage() {
   const [formNotes, setFormNotes] = useState("")
 
   useEffect(() => {
+    apiFetchProfile()
+      .then((data) => {
+        if (data?.targets) {
+          setTargets(data.targets)
+        } else if (data?.guidance) {
+          setTargets(resolveNutritionTargets(data.guidance))
+        }
+      })
+      .catch(() => {})
+  }, [])
+
+  useEffect(() => {
     loadEntries()
   }, [filter, date])
 
   async function loadEntries() {
     setLoading(true)
     try {
-      const params = new URLSearchParams()
-      if (date) params.set("date", date)
-      if (filter && filter !== "all") params.set("mealCategory", filter)
-      const res = await fetch(`/api/food-entries?${params.toString()}`)
-      const data = await res.json()
+      const data = await apiFetchFoodEntries({ date, mealCategory: filter })
       setEntries(Array.isArray(data) ? data : [])
     } catch (err) {
       console.error(err)
@@ -105,7 +127,7 @@ export default function JournalPage() {
   async function deleteEntry(id: string) {
     if (!window.confirm("Remove this entry from your journal?")) return
     try {
-      await fetch(`/api/food-entries/${id}`, { method: "DELETE" })
+      await apiDeleteFoodEntry(id)
       setEntries((prev) => prev.filter((e) => e.id !== id))
     } catch (err) {
       console.error(err)
@@ -152,12 +174,7 @@ export default function JournalPage() {
 
     setAiAnalyzing(true)
     try {
-      const res = await fetch("/api/ai/analyze", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ textDescription: textToAnalyze }),
-      })
-      const data = await res.json()
+      const data = await apiAnalyzeFood({ textDescription: textToAnalyze })
       if (data && data.items && data.items.length > 0) {
         const first = data.items[0]
         setFormCalories(String(Math.round(first.calories || 250)))
@@ -195,17 +212,9 @@ export default function JournalPage() {
 
     try {
       if (editingEntry) {
-        await fetch(`/api/food-entries/${editingEntry.id}`, {
-          method: "PATCH",
-          headers: { "Content-Type": "application/json" },
-          body: JSON.stringify(payload),
-        })
+        await apiUpdateFoodEntry(editingEntry.id, payload)
       } else {
-        await fetch("/api/food-entries", {
-          method: "POST",
-          headers: { "Content-Type": "application/json" },
-          body: JSON.stringify(payload),
-        })
+        await apiCreateFoodEntries(payload)
       }
 
       setShowAddModal(false)
@@ -229,7 +238,7 @@ export default function JournalPage() {
   )
 
   return (
-    <div className="flex-1 overflow-y-auto p-4 sm:p-6 lg:p-8 max-w-5xl mx-auto space-y-6 w-full">
+    <div className="flex-1 p-4 sm:p-6 lg:p-8 max-w-5xl mx-auto space-y-6 w-full">
       {/* Header */}
       <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3 pb-1 border-b border-[#253745]/40">
         <div>
@@ -256,34 +265,48 @@ export default function JournalPage() {
       <Card className="p-4 bg-[#09131a] border border-[#253745]/60">
         <div className="flex items-center justify-between pb-2 border-b border-[#253745]/40 text-xs">
           <span className="font-medium text-[#9BA8AB]">Daily Intake Roll-Up</span>
-          <span className="font-mono text-[#CCD0CF]">{entries.length} items logged</span>
+          <div className="flex items-center gap-3">
+            <Link
+              href="/profile#targets"
+              className="inline-flex items-center gap-1 text-[11px] text-[#9BA8AB] hover:text-[#CCD0CF] transition-colors"
+            >
+              <SlidersHorizontal className="h-3 w-3" />
+              Edit targets
+            </Link>
+            <span className="font-mono text-[#CCD0CF]">{entries.length} items logged</span>
+          </div>
         </div>
 
         <div className="grid grid-cols-2 sm:grid-cols-5 gap-2 pt-3 text-center">
-          <div className="p-2 rounded-xl bg-amber-500/10 border border-amber-500/20">
+          <div className="p-2.5 rounded-xl bg-amber-500/10 border border-amber-500/20 flex flex-col justify-between">
             <span className="text-[10px] text-amber-400 font-medium block">Calories</span>
             <span className="text-base font-bold text-[#CCD0CF] tabular-nums font-mono">{Math.round(totals.calories)}</span>
-            <span className="text-[10px] text-[#9BA8AB] block">kcal</span>
+            <span className="text-[10px] text-[#9BA8AB] block tabular-nums">/ {targets.calories.toLocaleString()} kcal</span>
+            <Progress value={totals.calories} max={targets.calories} className="h-1 mt-1.5 bg-[#11212D]" barClassName="bg-amber-500" />
           </div>
-          <div className="p-2 rounded-xl bg-emerald-500/10 border border-emerald-500/20">
+          <div className="p-2.5 rounded-xl bg-emerald-500/10 border border-emerald-500/20 flex flex-col justify-between">
             <span className="text-[10px] text-emerald-400 font-medium block">Protein</span>
             <span className="text-base font-bold text-[#CCD0CF] tabular-nums font-mono">{totals.protein.toFixed(1)}</span>
-            <span className="text-[10px] text-[#9BA8AB] block">g</span>
+            <span className="text-[10px] text-[#9BA8AB] block tabular-nums">/ {targets.protein}g</span>
+            <Progress value={totals.protein} max={targets.protein} className="h-1 mt-1.5 bg-[#11212D]" barClassName="bg-emerald-500" />
           </div>
-          <div className="p-2 rounded-xl bg-cyan-500/10 border border-cyan-500/20">
+          <div className="p-2.5 rounded-xl bg-cyan-500/10 border border-cyan-500/20 flex flex-col justify-between">
             <span className="text-[10px] text-cyan-400 font-medium block">Carbs</span>
             <span className="text-base font-bold text-[#CCD0CF] tabular-nums font-mono">{totals.carbs.toFixed(1)}</span>
-            <span className="text-[10px] text-[#9BA8AB] block">g</span>
+            <span className="text-[10px] text-[#9BA8AB] block tabular-nums">/ {targets.carbs}g</span>
+            <Progress value={totals.carbs} max={targets.carbs} className="h-1 mt-1.5 bg-[#11212D]" barClassName="bg-cyan-500" />
           </div>
-          <div className="p-2 rounded-xl bg-amber-500/10 border border-amber-500/20">
+          <div className="p-2.5 rounded-xl bg-amber-500/10 border border-amber-500/20 flex flex-col justify-between">
             <span className="text-[10px] text-amber-400 font-medium block">Fat</span>
             <span className="text-base font-bold text-[#CCD0CF] tabular-nums font-mono">{totals.fat.toFixed(1)}</span>
-            <span className="text-[10px] text-[#9BA8AB] block">g</span>
+            <span className="text-[10px] text-[#9BA8AB] block tabular-nums">/ {targets.fat}g</span>
+            <Progress value={totals.fat} max={targets.fat} className="h-1 mt-1.5 bg-[#11212D]" barClassName="bg-amber-500" />
           </div>
-          <div className="p-2 rounded-xl bg-violet-500/10 border border-violet-500/20 col-span-2 sm:col-span-1">
+          <div className="p-2.5 rounded-xl bg-violet-500/10 border border-violet-500/20 col-span-2 sm:col-span-1 flex flex-col justify-between">
             <span className="text-[10px] text-violet-400 font-medium block">Fibre</span>
             <span className="text-base font-bold text-[#CCD0CF] tabular-nums font-mono">{totals.fibre.toFixed(1)}</span>
-            <span className="text-[10px] text-[#9BA8AB] block">g</span>
+            <span className="text-[10px] text-[#9BA8AB] block tabular-nums">/ {targets.fibre}g</span>
+            <Progress value={totals.fibre} max={targets.fibre} className="h-1 mt-1.5 bg-[#11212D]" barClassName="bg-violet-500" />
           </div>
         </div>
       </Card>
@@ -398,22 +421,25 @@ export default function JournalPage() {
 
                           <div className="flex items-center gap-1">
                             <button
+                              type="button"
                               onClick={() => setExpandedId(isExpanded ? null : entry.id)}
-                              className="p-1.5 text-[#9BA8AB] hover:text-[#CCD0CF] rounded-lg transition-colors"
+                              className="p-2 text-[#9BA8AB] hover:text-[#CCD0CF] rounded-lg transition-colors touch-manipulation"
                               title="Expand details"
                             >
                               {isExpanded ? <ChevronUp className="h-4 w-4" /> : <ChevronDown className="h-4 w-4" />}
                             </button>
                             <button
+                              type="button"
                               onClick={() => openEditModal(entry)}
-                              className="p-1.5 text-[#9BA8AB] hover:text-[#CCD0CF] rounded-lg transition-colors"
+                              className="p-2 text-[#9BA8AB] hover:text-[#CCD0CF] rounded-lg transition-colors touch-manipulation"
                               title="Edit item"
                             >
                               <Edit2 className="h-3.5 w-3.5" />
                             </button>
                             <button
+                              type="button"
                               onClick={() => deleteEntry(entry.id)}
-                              className="p-1.5 text-[#9BA8AB] hover:text-rose-400 rounded-lg transition-colors"
+                              className="p-2 text-[#9BA8AB] hover:text-rose-400 rounded-lg transition-colors touch-manipulation"
                               title="Delete entry"
                             >
                               <Trash2 className="h-3.5 w-3.5" />

@@ -65,6 +65,10 @@ model NutritionProfile {
   id                String   @id @default(uuid())
   userId            String   @unique
   age               Int?
+  gender            String?  // male, female, other
+  weightKg          Float?
+  heightCm          Float?
+  goal              String?  // fat_loss, maintain, lean_recomp, muscle_gain
   dietaryPreference String?  // vegetarian, non_vegetarian, vegan, eggetarian, jain
   allergies         String?  // JSON array string
   restrictions      String?  // JSON array string
@@ -84,6 +88,7 @@ model ProfessionalGuidance {
   dailyProteinRef       Int?
   dailyCarbsRef         Int?
   dailyFatRef           Int?
+  dailyFibreRef         Int?
   sourceNotes           String?
   enteredByProfessional Boolean    @default(false)
   createdAt             DateTime   @default(now())

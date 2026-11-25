@@ -1,5 +1,5 @@
 // NutriMentor PWA Service Worker (PWABuilder Score Optimized)
-const CACHE_NAME = "nutrimentor-v2"
+const CACHE_NAME = "nutrimentor-v3"
 const OFFLINE_URLS = [
   "/",
   "/manifest.json",
@@ -29,12 +29,29 @@ self.addEventListener("activate", (event) => {
   self.clients.claim()
 })
 
-// Stale-While-Revalidate with network fallback for offline support
+// Network-first for HTML navigations so CSS/JS updates apply immediately; stale-while-revalidate for assets
 self.addEventListener("fetch", (event) => {
   if (event.request.method !== "GET") return
 
   // Do not intercept dynamic authentication or server actions
   if (event.request.url.includes("/api/auth/")) {
+    return
+  }
+
+  if (event.request.mode === "navigate") {
+    event.respondWith(
+      fetch(event.request)
+        .then((networkResponse) => {
+          if (networkResponse && networkResponse.status === 200) {
+            const responseToCache = networkResponse.clone()
+            caches.open(CACHE_NAME).then((cache) => {
+              cache.put(event.request, responseToCache)
+            })
+          }
+          return networkResponse
+        })
+        .catch(() => caches.match(event.request).then((cached) => cached || caches.match("/")))
+    )
     return
   }
 
@@ -50,10 +67,7 @@ self.addEventListener("fetch", (event) => {
           }
           return networkResponse
         })
-        .catch(() => {
-          // If network fails, return cached response or offline root
-          return cachedResponse || caches.match("/")
-        })
+        .catch(() => cachedResponse)
 
       return cachedResponse || fetchPromise
     })

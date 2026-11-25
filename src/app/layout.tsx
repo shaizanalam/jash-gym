@@ -1,9 +1,10 @@
 import type { Metadata, Viewport } from "next"
-import { Inter } from "next/font/google"
+import { Geist, Geist_Mono } from "next/font/google"
 import "./globals.css"
 import { Providers } from "@/components/providers"
 
-const inter = Inter({ subsets: ["latin"], variable: "--font-sans" })
+const geistSans = Geist({ subsets: ["latin"], variable: "--font-geist-sans" })
+const geistMono = Geist_Mono({ subsets: ["latin"], variable: "--font-geist-mono" })
 
 export const viewport: Viewport = {
   themeColor: [
@@ -42,12 +43,16 @@ export default function RootLayout({
   children: React.ReactNode
 }>) {
   return (
-    <html lang="en" className={inter.variable}>
+    <html
+      lang="en"
+      className={`${geistSans.variable} ${geistMono.variable}`}
+      suppressHydrationWarning
+    >
       <head>
         <meta name="mobile-web-app-capable" content="yes" />
         <meta name="apple-touch-fullscreen" content="yes" />
       </head>
-      <body className="min-h-full bg-[#06141B] text-[#CCD0CF] antialiased">
+      <body className="min-h-dvh bg-[#06141B] text-[#CCD0CF] antialiased">
         <Providers>{children}</Providers>
       </body>
     </html>

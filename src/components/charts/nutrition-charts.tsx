@@ -12,6 +12,7 @@ import {
   BarChart,
   Bar,
   Legend,
+  ReferenceLine,
 } from "recharts"
 import { BarChart3, TrendingUp } from "lucide-react"
 
@@ -48,7 +49,13 @@ function CustomTooltip({ active, payload, label }: any) {
   )
 }
 
-export function CalorieTrendChart({ data }: { data: DailyChartData[] }) {
+export function CalorieTrendChart({
+  data,
+  targetCalories,
+}: {
+  data: DailyChartData[]
+  targetCalories?: number
+}) {
   const [mounted, setMounted] = React.useState(false)
 
   React.useEffect(() => {
@@ -74,13 +81,37 @@ export function CalorieTrendChart({ data }: { data: DailyChartData[] }) {
   }
 
   return (
-    <div className="h-64 w-full">
+    <div className="h-64 w-full touch-pan-y">
       <ResponsiveContainer width="100%" height="100%">
         <LineChart data={data} margin={{ top: 10, right: 10, left: -20, bottom: 0 }}>
           <CartesianGrid strokeDasharray="3 3" vertical={false} stroke="rgba(37, 55, 69, 0.4)" />
           <XAxis dataKey="name" stroke="#9BA8AB" fontSize={11} tickLine={false} axisLine={false} />
-          <YAxis stroke="#9BA8AB" fontSize={11} tickLine={false} axisLine={false} />
+          <YAxis
+            stroke="#9BA8AB"
+            fontSize={11}
+            tickLine={false}
+            axisLine={false}
+            domain={[
+              0,
+              (dataMax: number) =>
+                Math.ceil(Math.max(dataMax, targetCalories || 0) * 1.12),
+            ]}
+          />
           <Tooltip content={<CustomTooltip />} />
+          {targetCalories && targetCalories > 0 && (
+            <ReferenceLine
+              y={targetCalories}
+              stroke="#9BA8AB"
+              strokeDasharray="4 4"
+              strokeOpacity={0.65}
+              label={{
+                value: `Target ${targetCalories.toLocaleString()}`,
+                position: "insideTopRight",
+                fill: "#9BA8AB",
+                fontSize: 10,
+              }}
+            />
+          )}
           <Line
             type="monotone"
             dataKey="calories"
@@ -122,7 +153,7 @@ export function MacroDistributionChart({ data }: { data: DailyChartData[] }) {
   }
 
   return (
-    <div className="h-64 w-full">
+    <div className="h-64 w-full touch-pan-y">
       <ResponsiveContainer width="100%" height="100%">
         <BarChart data={data} margin={{ top: 10, right: 10, left: -20, bottom: 0 }}>
           <CartesianGrid strokeDasharray="3 3" vertical={false} stroke="rgba(37, 55, 69, 0.4)" />
@@ -146,7 +177,13 @@ export function MacroDistributionChart({ data }: { data: DailyChartData[] }) {
   )
 }
 
-export function DashboardTrendChart({ data }: { data?: { name: string; calories: number }[] }) {
+export function DashboardTrendChart({
+  data,
+  targetCalories,
+}: {
+  data?: { name: string; calories: number }[]
+  targetCalories?: number
+}) {
   const [mounted, setMounted] = React.useState(false)
 
   React.useEffect(() => {
@@ -170,13 +207,31 @@ export function DashboardTrendChart({ data }: { data?: { name: string; calories:
   }
 
   return (
-    <div className="h-44 w-full">
+    <div className="h-44 w-full touch-pan-y">
       <ResponsiveContainer width="100%" height="100%">
         <LineChart data={data} margin={{ top: 8, right: 10, left: -22, bottom: 0 }}>
           <CartesianGrid strokeDasharray="3 3" vertical={false} stroke="rgba(37, 55, 69, 0.4)" />
           <XAxis dataKey="name" stroke="#9BA8AB" fontSize={10} tickLine={false} axisLine={false} />
-          <YAxis stroke="#9BA8AB" fontSize={10} tickLine={false} axisLine={false} />
+          <YAxis
+            stroke="#9BA8AB"
+            fontSize={10}
+            tickLine={false}
+            axisLine={false}
+            domain={[
+              0,
+              (dataMax: number) =>
+                Math.ceil(Math.max(dataMax, targetCalories || 0) * 1.12),
+            ]}
+          />
           <Tooltip content={<CustomTooltip />} />
+          {targetCalories && targetCalories > 0 && (
+            <ReferenceLine
+              y={targetCalories}
+              stroke="#9BA8AB"
+              strokeDasharray="4 4"
+              strokeOpacity={0.55}
+            />
+          )}
           <Line
             type="monotone"
             dataKey="calories"

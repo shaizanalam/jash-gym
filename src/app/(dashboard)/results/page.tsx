@@ -1,11 +1,12 @@
 "use client"
 
-import { useState, useEffect } from "react"
+import { useState, useEffect, Suspense } from "react"
 import { useRouter, useSearchParams } from "next/navigation"
 import { Button, Input, Card, CardContent, CardHeader, CardTitle, CardFooter, Badge } from "@/components/ui/index"
 import { CheckCircle2, Plus, Trash2, Save, ArrowLeft, Loader2 } from "lucide-react"
 import { MEAL_CATEGORIES } from "@/lib/constants"
 import Link from "next/link"
+import { apiCreateFoodEntries } from "@/lib/client-api"
 
 interface AnalysisItem {
   foodName: string
@@ -29,7 +30,7 @@ interface AnalysisData {
   clarificationQuestion?: string
 }
 
-export default function ResultsPage() {
+function ResultsContent() {
   const router = useRouter()
   const searchParams = useSearchParams()
   const [items, setItems] = useState<AnalysisItem[]>([])
@@ -93,15 +94,7 @@ export default function ResultsPage() {
         notes: notes.trim() || null,
       }))
 
-      const res = await fetch("/api/food-entries", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify(payload),
-      })
-
-      if (!res.ok) {
-        throw new Error("Failed to save meal items")
-      }
+      await apiCreateFoodEntries(payload)
 
       setSaved(true)
     } catch (err) {
@@ -144,7 +137,7 @@ export default function ResultsPage() {
   }
 
   return (
-    <div className="flex-1 overflow-y-auto p-4 sm:p-6 lg:p-8 max-w-4xl mx-auto space-y-5 w-full">
+    <div className="flex-1 p-4 sm:p-6 lg:p-8 max-w-4xl mx-auto space-y-5 w-full">
       <div className="flex items-center justify-between pb-2 border-b border-[#253745]/40">
         <button
           onClick={() => router.push("/scanner")}
@@ -339,5 +332,19 @@ export default function ResultsPage() {
         )}
       </Card>
     </div>
+  )
+}
+
+export default function ResultsPage() {
+  return (
+    <Suspense
+      fallback={
+        <div className="flex flex-1 items-center justify-center p-12">
+          <Loader2 className="h-6 w-6 animate-spin text-[#9BA8AB]" />
+        </div>
+      }
+    >
+      <ResultsContent />
+    </Suspense>
   )
 }

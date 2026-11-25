@@ -1,344 +1,58 @@
+import fs from "node:fs"
+import path from "node:path"
 import { PrismaClient } from "@prisma/client"
+
+interface SeedFoodItem {
+  name: string
+  alternativeNames: string[]
+  category: string
+  servingSizeG: number
+  servingUnit: string
+  caloriesPer100g: number
+  proteinG: number
+  carbsG: number
+  fatG: number
+  fibreG: number
+  source: string
+  isCustom: boolean
+}
 
 const prisma = new PrismaClient()
 
-// Standard master food dictionary (NIN / IFCT / USDA verified nutrient figures per 100g)
-const MASTER_INDIAN_FOODS = [
-  // Grains & Breads
-  {
-    name: "Roti / Chapati",
-    alternativeNames: ["Roti", "Chapati", "Phulka"],
-    category: "indian_grain",
-    servingSizeG: 40,
-    servingUnit: "piece",
-    caloriesPer100g: 297,
-    proteinG: 9.7,
-    carbsG: 59.6,
-    fatG: 3.8,
-    fibreG: 4.2,
-    source: "NIN / IFCT",
-    isCustom: false,
-  },
-  {
-    name: "Rice (Cooked)",
-    alternativeNames: ["Chawal", "Steamed Rice", "White Rice"],
-    category: "indian_grain",
-    servingSizeG: 150,
-    servingUnit: "bowl",
-    caloriesPer100g: 130,
-    proteinG: 2.7,
-    carbsG: 28.2,
-    fatG: 0.3,
-    fibreG: 0.4,
-    source: "USDA",
-    isCustom: false,
-  },
-  {
-    name: "Paratha",
-    alternativeNames: ["Aloo Paratha", "Plain Paratha"],
-    category: "indian_grain",
-    servingSizeG: 80,
-    servingUnit: "piece",
-    caloriesPer100g: 296,
-    proteinG: 6.1,
-    carbsG: 38.5,
-    fatG: 13.0,
-    fibreG: 3.5,
-    source: "NIN / IFCT",
-    isCustom: false,
-  },
-  {
-    name: "Poha",
-    alternativeNames: ["Flattened Rice", "Avalakki"],
-    category: "indian_snack",
-    servingSizeG: 100,
-    servingUnit: "plate",
-    caloriesPer100g: 160,
-    proteinG: 3.2,
-    carbsG: 32.0,
-    fatG: 2.5,
-    fibreG: 1.8,
-    source: "NIN / IFCT",
-    isCustom: false,
-  },
-  {
-    name: "Idli",
-    alternativeNames: ["Steamed Rice Cake"],
-    category: "indian_snack",
-    servingSizeG: 60,
-    servingUnit: "piece (2)",
-    caloriesPer100g: 139,
-    proteinG: 4.2,
-    carbsG: 28.0,
-    fatG: 0.8,
-    fibreG: 1.5,
-    source: "NIN / IFCT",
-    isCustom: false,
-  },
-  {
-    name: "Dosa",
-    alternativeNames: ["Plain Dosa", "Paper Dosa"],
-    category: "indian_snack",
-    servingSizeG: 80,
-    servingUnit: "piece",
-    caloriesPer100g: 165,
-    proteinG: 3.9,
-    carbsG: 28.2,
-    fatG: 4.1,
-    fibreG: 1.9,
-    source: "NIN / IFCT",
-    isCustom: false,
-  },
-  {
-    name: "Khichdi",
-    alternativeNames: ["Rice and Lentil Mix", "Moong Dal Khichdi"],
-    category: "indian_snack",
-    servingSizeG: 200,
-    servingUnit: "bowl",
-    caloriesPer100g: 120,
-    proteinG: 4.5,
-    carbsG: 24.0,
-    fatG: 1.5,
-    fibreG: 2.8,
-    source: "NIN / IFCT",
-    isCustom: false,
-  },
-
-  // Dals & Curries
-  {
-    name: "Dal Tadka",
-    alternativeNames: ["Yellow Lentil Curry", "Toor Dal"],
-    category: "indian_dal",
-    servingSizeG: 150,
-    servingUnit: "bowl",
-    caloriesPer100g: 115,
-    proteinG: 6.8,
-    carbsG: 18.5,
-    fatG: 2.5,
-    fibreG: 5.2,
-    source: "NIN / IFCT",
-    isCustom: false,
-  },
-  {
-    name: "Dal Makhani",
-    alternativeNames: ["Black Lentil Curry"],
-    category: "indian_dal",
-    servingSizeG: 150,
-    servingUnit: "bowl",
-    caloriesPer100g: 185,
-    proteinG: 8.2,
-    carbsG: 22.0,
-    fatG: 7.5,
-    fibreG: 6.0,
-    source: "NIN / IFCT",
-    isCustom: false,
-  },
-  {
-    name: "Sambar",
-    alternativeNames: ["Lentil Vegetable Stew"],
-    category: "indian_dal",
-    servingSizeG: 150,
-    servingUnit: "bowl",
-    caloriesPer100g: 95,
-    proteinG: 4.5,
-    carbsG: 14.5,
-    fatG: 2.2,
-    fibreG: 4.0,
-    source: "NIN / IFCT",
-    isCustom: false,
-  },
-
-  // Dairy
-  {
-    name: "Paneer",
-    alternativeNames: ["Cottage Cheese"],
-    category: "indian_dairy",
-    servingSizeG: 100,
-    servingUnit: "cube",
-    caloriesPer100g: 265,
-    proteinG: 18.3,
-    carbsG: 1.2,
-    fatG: 20.8,
-    fibreG: 0,
-    source: "NIN / IFCT",
-    isCustom: false,
-  },
-  {
-    name: "Curd / Yogurt",
-    alternativeNames: ["Dahi", "Plain Curd"],
-    category: "indian_dairy",
-    servingSizeG: 150,
-    servingUnit: "bowl",
-    caloriesPer100g: 61,
-    proteinG: 3.5,
-    carbsG: 4.7,
-    fatG: 3.3,
-    fibreG: 0,
-    source: "USDA",
-    isCustom: false,
-  },
-  {
-    name: "Milk",
-    alternativeNames: ["Doodh", "Cow Milk"],
-    category: "indian_dairy",
-    servingSizeG: 250,
-    servingUnit: "glass",
-    caloriesPer100g: 61,
-    proteinG: 3.2,
-    carbsG: 4.8,
-    fatG: 3.3,
-    fibreG: 0,
-    source: "USDA",
-    isCustom: false,
-  },
-
-  // Sabzi & Veg Dishes
-  {
-    name: "Aloo Sabzi",
-    alternativeNames: ["Potato Curry", "Jeera Aloo"],
-    category: "indian_sabzi",
-    servingSizeG: 150,
-    servingUnit: "bowl",
-    caloriesPer100g: 95,
-    proteinG: 2.1,
-    carbsG: 14.5,
-    fatG: 3.8,
-    fibreG: 2.5,
-    source: "NIN / IFCT",
-    isCustom: false,
-  },
-  {
-    name: "Palak Paneer",
-    alternativeNames: ["Spinach with Paneer"],
-    category: "indian_sabzi",
-    servingSizeG: 150,
-    servingUnit: "bowl",
-    caloriesPer100g: 165,
-    proteinG: 9.5,
-    carbsG: 10.2,
-    fatG: 10.5,
-    fibreG: 3.8,
-    source: "NIN / IFCT",
-    isCustom: false,
-  },
-  {
-    name: "Mixed Vegetable",
-    alternativeNames: ["Sabzi Mix", "Mix Veg"],
-    category: "indian_sabzi",
-    servingSizeG: 150,
-    servingUnit: "bowl",
-    caloriesPer100g: 75,
-    proteinG: 2.8,
-    carbsG: 12.5,
-    fatG: 2.0,
-    fibreG: 4.5,
-    source: "NIN / IFCT",
-    isCustom: false,
-  },
-
-  // Proteins
-  {
-    name: "Egg (Boiled)",
-    alternativeNames: ["Anda", "Hard Boiled Egg"],
-    category: "protein",
-    servingSizeG: 50,
-    servingUnit: "piece",
-    caloriesPer100g: 155,
-    proteinG: 13.0,
-    carbsG: 1.1,
-    fatG: 11.0,
-    fibreG: 0,
-    source: "USDA",
-    isCustom: false,
-  },
-  {
-    name: "Chicken Curry",
-    alternativeNames: ["Murgh Curry", "Tariwala Chicken"],
-    category: "protein",
-    servingSizeG: 150,
-    servingUnit: "bowl",
-    caloriesPer100g: 220,
-    proteinG: 18.0,
-    carbsG: 6.5,
-    fatG: 13.5,
-    fibreG: 1.0,
-    source: "USDA",
-    isCustom: false,
-  },
-  {
-    name: "Sprouts",
-    alternativeNames: ["Moong Sprouts", "Ankurit Moong"],
-    category: "protein",
-    servingSizeG: 100,
-    servingUnit: "bowl",
-    caloriesPer100g: 110,
-    proteinG: 8.0,
-    carbsG: 18.0,
-    fatG: 1.5,
-    fibreG: 7.0,
-    source: "NIN / IFCT",
-    isCustom: false,
-  },
-
-  // Fruits
-  {
-    name: "Banana",
-    alternativeNames: ["Kela"],
-    category: "fruit",
-    servingSizeG: 118,
-    servingUnit: "piece",
-    caloriesPer100g: 89,
-    proteinG: 1.1,
-    carbsG: 22.8,
-    fatG: 0.3,
-    fibreG: 2.6,
-    source: "USDA",
-    isCustom: false,
-  },
-  {
-    name: "Apple",
-    alternativeNames: ["Seb"],
-    category: "fruit",
-    servingSizeG: 182,
-    servingUnit: "piece",
-    caloriesPer100g: 52,
-    proteinG: 0.3,
-    carbsG: 14.0,
-    fatG: 0.2,
-    fibreG: 2.4,
-    source: "USDA",
-    isCustom: false,
-  },
-]
-
 async function main() {
-  console.log("Seeding Master Indian Food Reference Database...")
+  const dataPath = path.resolve(process.cwd(), "src", "data", "indian-foods.json")
+  const foods = JSON.parse(fs.readFileSync(dataPath, "utf8")) as SeedFoodItem[]
+
+  console.log(`Seeding Master Indian Food Reference Database (${foods.length} items)...`)
+
+  const existing = await prisma.foodItem.findMany({
+    select: { name: true },
+  })
+  const existingNames = new Set(existing.map((e) => e.name.toLowerCase()))
+
+  const toCreate = foods
+    .filter((food) => !existingNames.has(food.name.toLowerCase()))
+    .map((food) => ({
+      name: food.name,
+      alternativeNames: JSON.stringify(food.alternativeNames),
+      category: food.category,
+      servingSizeG: food.servingSizeG,
+      servingUnit: food.servingUnit,
+      caloriesPer100g: food.caloriesPer100g,
+      proteinG: food.proteinG,
+      carbsG: food.carbsG,
+      fatG: food.fatG,
+      fibreG: food.fibreG,
+      source: food.source,
+      isCustom: food.isCustom,
+    }))
 
   let createdCount = 0
-  for (const food of MASTER_INDIAN_FOODS) {
-    const existing = await prisma.foodItem.findFirst({
-      where: { name: food.name },
+  if (toCreate.length > 0) {
+    const result = await prisma.foodItem.createMany({
+      data: toCreate,
     })
-
-    if (!existing) {
-      await prisma.foodItem.create({
-        data: {
-          name: food.name,
-          alternativeNames: JSON.stringify(food.alternativeNames),
-          category: food.category,
-          servingSizeG: food.servingSizeG,
-          servingUnit: food.servingUnit,
-          caloriesPer100g: food.caloriesPer100g,
-          proteinG: food.proteinG,
-          carbsG: food.carbsG,
-          fatG: food.fatG,
-          fibreG: food.fibreG,
-          source: food.source,
-          isCustom: food.isCustom,
-        },
-      })
-      createdCount++
-    }
+    createdCount = result.count
   }
 
   console.log(`Master Food Database ready. (${createdCount} new items inserted)`)
